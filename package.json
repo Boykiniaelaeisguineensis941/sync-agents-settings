@@ -1,15 +1,16 @@
 {
   "name": "sync-agents-settings",
   "packageManager": "pnpm@10.32.1",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Sync MCP server configurations from Claude Code to Gemini CLI and Codex CLI",
   "main": "dist/cli.js",
   "bin": {
-    "sync-agents-settings": "dist/cli.js",
-    "sync-agents": "dist/cli.js"
+    "sync-agents-settings": "bin/sync-agents.cjs",
+    "sync-agents": "bin/sync-agents.cjs"
   },
   "files": [
     "dist",
+    "bin",
     "!dist/__tests__"
   ],
   "scripts": {
