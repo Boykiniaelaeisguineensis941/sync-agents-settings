@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.tsbuildinfo
+firebase-debug.log
+.codex/
+.claude/
+coverage/
+test-results.xml

@@ -1,0 +1,30 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+const HOME = homedir();
+
+export const PATHS = {
+  // Claude Code
+  claudeJson: join(HOME, ".claude.json"),
+  claudeSettings: join(HOME, ".claude", "settings.json"),
+  claudePluginCache: join(HOME, ".claude", "plugins", "cache"),
+
+  // Gemini CLI
+  geminiSettings: join(HOME, ".gemini", "settings.json"),
+
+  // Codex CLI
+  codexDir: join(HOME, ".codex"),
+  codexConfig: join(HOME, ".codex", "config.toml"),
+
+  // OpenCode
+  openCodeConfig: join(HOME, ".config", "opencode", "opencode.json"),
+
+  // Kiro CLI
+  kiroMcpConfig: join(HOME, ".kiro", "settings", "mcp.json"),
+
+  // Cursor
+  cursorMcpConfig: join(HOME, ".cursor", "mcp.json"),
+
+  // Backups
+  backupDir: join(HOME, ".sync-agents-backup"),
+} as const;
