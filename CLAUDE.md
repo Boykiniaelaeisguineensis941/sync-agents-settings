@@ -12,12 +12,15 @@ pnpm lint               # ESLint check
 pnpm format:check       # Prettier check
 pnpm format             # Prettier auto-fix
 pnpm dev list           # Run CLI from source (tsx)
+bash ci-local.sh        # Run full local CI (format + lint + typecheck + build + test)
 ```
 
 Run a single test file:
 ```bash
 npx vitest run src/__tests__/codex-writer.test.ts
 ```
+
+**Important:** Always run `bash ci-local.sh` before committing to catch lint/format/type errors early.
 
 ## Architecture
 

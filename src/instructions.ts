@@ -198,7 +198,7 @@ export async function syncInstructions(
       continue;
     }
 
-    let content = pair.transform ? pair.transform(filtered) : filtered;
+    const content = pair.transform ? pair.transform(filtered) : filtered;
 
     let action: ConflictAction = "overwrite";
 
