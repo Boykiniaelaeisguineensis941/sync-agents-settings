@@ -24,7 +24,11 @@ export function writeToGemini(
   // Read existing Gemini settings
   let settings: GeminiSettings = {};
   if (existsSync(PATHS.geminiSettings)) {
-    settings = JSON.parse(readFileSync(PATHS.geminiSettings, "utf-8"));
+    try {
+      settings = JSON.parse(readFileSync(PATHS.geminiSettings, "utf-8"));
+    } catch {
+      // skip malformed settings
+    }
   }
 
   const existing = settings.mcpServers ?? {};

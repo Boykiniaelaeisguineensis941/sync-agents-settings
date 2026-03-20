@@ -137,7 +137,7 @@ program
     for (const target of targets) {
       if (target === "codex") {
         console.log(`  Codex: use 'codex mcp list' to view`);
-      } else if (target in diffConfigs) {
+      } else if (Object.hasOwn(diffConfigs, target)) {
         const { path, key } = diffConfigs[target];
         const names = readExistingServerNames(path, key);
         printDiff(target.charAt(0).toUpperCase() + target.slice(1), claudeNames, names);

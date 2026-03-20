@@ -33,11 +33,15 @@ function readFromClaudeJson(): UnifiedMcpServer[] {
     return servers;
   }
 
-  const raw = JSON.parse(readFileSync(PATHS.claudeJson, "utf-8"));
-  const mcpServers: Record<string, ClaudeMcpServer> = raw.mcpServers ?? {};
+  try {
+    const raw = JSON.parse(readFileSync(PATHS.claudeJson, "utf-8"));
+    const mcpServers: Record<string, ClaudeMcpServer> = raw.mcpServers ?? {};
 
-  for (const [name, config] of Object.entries(mcpServers)) {
-    servers.push(toUnified(name, config, "claude-config"));
+    for (const [name, config] of Object.entries(mcpServers)) {
+      servers.push(toUnified(name, config, "claude-config"));
+    }
+  } catch {
+    console.log("  ⚠ Failed to parse ~/.claude.json");
   }
 
   return servers;
@@ -51,8 +55,13 @@ function readFromPlugins(seenNames: Set<string>): UnifiedMcpServer[] {
     return servers;
   }
 
-  const settings: ClaudeSettings = JSON.parse(readFileSync(PATHS.claudeSettings, "utf-8"));
-  const enabledPlugins = settings.enabledPlugins ?? {};
+  let enabledPlugins: Record<string, boolean> = {};
+  try {
+    const settings: ClaudeSettings = JSON.parse(readFileSync(PATHS.claudeSettings, "utf-8"));
+    enabledPlugins = settings.enabledPlugins ?? {};
+  } catch {
+    return servers;
+  }
 
   // Walk plugin cache to find .mcp.json files for enabled plugins
   if (!existsSync(PATHS.claudePluginCache)) {

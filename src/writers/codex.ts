@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import TOML from "@iarna/toml";
 import type { UnifiedMcpServer } from "../types.js";
 import { expandEnvVars } from "../env.js";
@@ -8,7 +8,7 @@ import { expandEnvVars } from "../env.js";
 const DEFAULT_CODEX_HOME = join(homedir(), ".codex");
 
 export function resolveCodexConfigPath(codexHome?: string): string {
-  const dir = codexHome ?? DEFAULT_CODEX_HOME;
+  const dir = resolve(codexHome ?? DEFAULT_CODEX_HOME);
   return join(dir, "config.toml");
 }
 
