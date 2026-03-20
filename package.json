@@ -1,14 +1,15 @@
 {
   "name": "sync-agents-settings",
   "packageManager": "pnpm@10.32.1",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Sync MCP server configurations from Claude Code to Gemini CLI and Codex CLI",
   "main": "dist/cli.js",
   "bin": {
-    "sync-agents": "./dist/cli.js"
+    "sync-agents": "dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/__tests__"
   ],
   "scripts": {
     "dev": "tsx src/cli.ts",
@@ -31,8 +32,12 @@
     "claude-code",
     "gemini-cli",
     "codex-cli",
+    "opencode",
+    "kiro",
+    "cursor",
     "sync",
-    "agent",
+    "ai-agent",
+    "mcp-servers",
     "settings"
   ],
   "author": "Leoyang183",

@@ -1,7 +1,7 @@
 # sync-agents-settings
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![version](https://img.shields.io/badge/version-0.1.0-blue)](package.json)
+[![npm](https://img.shields.io/npm/v/sync-agents-settings?logo=npm)](https://www.npmjs.com/package/sync-agents-settings)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green?logo=node.js)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-%3E%3D9-orange?logo=pnpm)](https://pnpm.io/)
@@ -20,45 +20,66 @@ If you use Claude Code as your primary AI coding agent but also switch between o
 
 This tool lets you configure MCP servers once in Claude Code, then sync everywhere with a single command.
 
-## Install
+## Quick Start
+
+No installation needed — just run with `npx`:
 
 ```bash
-pnpm install
+# List all MCP servers detected from Claude Code
+npx sync-agents-settings list
+
+# Preview sync (no files modified)
+npx sync-agents-settings sync --dry-run
+
+# Sync to all targets (with automatic backup)
+npx sync-agents-settings sync
+```
+
+## Install (optional)
+
+```bash
+# Global install for the `sync-agents` command
+npm install -g sync-agents-settings
+
+# Then use directly
+sync-agents list
+sync-agents sync
 ```
 
 ## Usage
 
 ```bash
-# List all MCP servers detected from Claude Code
-npx tsx src/cli.ts list
-
-# Preview sync (no files modified)
-npx tsx src/cli.ts sync --dry-run
-
-# Sync to all targets (with automatic backup)
-npx tsx src/cli.ts sync
-
 # Sync to a specific target
-npx tsx src/cli.ts sync --target gemini
-npx tsx src/cli.ts sync --target codex
-npx tsx src/cli.ts sync --target opencode
-npx tsx src/cli.ts sync --target kiro
-npx tsx src/cli.ts sync --target cursor
+sync-agents sync --target gemini
+sync-agents sync --target codex
+sync-agents sync --target opencode
+sync-agents sync --target kiro
+sync-agents sync --target cursor
 
 # Sync to Codex project-level config
-npx tsx src/cli.ts sync --target codex --codex-home ./my-project/.codex
+sync-agents sync --target codex --codex-home ./my-project/.codex
 
 # Compare differences
-npx tsx src/cli.ts diff
+sync-agents diff
 
 # Skip OAuth-only servers (e.g. Slack)
-npx tsx src/cli.ts sync --skip-oauth
+sync-agents sync --skip-oauth
 
 # Skip backup
-npx tsx src/cli.ts sync --no-backup
+sync-agents sync --no-backup
 
 # Verbose output
-npx tsx src/cli.ts sync -v
+sync-agents sync -v
+```
+
+### Development
+
+```bash
+git clone https://github.com/Leoyang183/sync-agents-settings.git
+cd sync-agents-settings
+pnpm install
+pnpm dev list        # Run from source
+pnpm test            # Run tests
 ```
 
 ## How It Works
@@ -284,30 +305,26 @@ MIT
 
 這個工具讓你只在 Claude Code 設定一次 MCP servers，一行指令同步到所有目標。
 
-### 安裝
+### 快速開始
 
-```bash
-pnpm install
-```
-
-### 使用方式
+不需安裝，直接用 `npx`：
 
 ```bash
 # 列出所有 Claude Code 的 MCP servers
-npx tsx src/cli.ts list
+npx sync-agents-settings list
 
 # 預覽同步（不修改任何檔案）
-npx tsx src/cli.ts sync --dry-run
+npx sync-agents-settings sync --dry-run
 
 # 同步到所有目標（自動備份）
-npx tsx src/cli.ts sync
+npx sync-agents-settings sync
 
 # 同步到特定目標
-npx tsx src/cli.ts sync --target gemini
-npx tsx src/cli.ts sync --target codex
-npx tsx src/cli.ts sync --target opencode
-npx tsx src/cli.ts sync --target kiro
-npx tsx src/cli.ts sync --target cursor
+npx sync-agents-settings sync --target gemini
+npx sync-agents-settings sync --target codex
+npx sync-agents-settings sync --target opencode
+npx sync-agents-settings sync --target kiro
+npx sync-agents-settings sync --target cursor
 ```
 
 ### 運作原理
