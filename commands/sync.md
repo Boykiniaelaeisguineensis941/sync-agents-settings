@@ -13,6 +13,7 @@ If no targets specified, sync to all targets (gemini, codex, opencode, kiro, cur
 The user may also pass flags:
 - `--skip-oauth` — skip MCP servers that require OAuth authentication
 - `--no-backup` — skip creating backup of target config files
+- `--report json` — output machine-readable JSON summary (CI-friendly)
 
 ## Execution Flow
 
@@ -33,6 +34,7 @@ The user may also pass flags:
    `npx sync-agents-settings sync --target <targets>`
 
 6. Present the final results.
+   - If `--report json` is used, return raw JSON and avoid text post-processing.
 
 ## Error Handling
 

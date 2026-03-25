@@ -107,8 +107,8 @@ function toCodexServer(server: UnifiedMcpServer): CodexTomlServer | null {
     };
 
     // Extract bearer token env var from Authorization header
-    if (server.headers?.["Authorization"]) {
-      const auth = server.headers["Authorization"];
+    const auth = getAuthorizationHeaderValue(server.headers);
+    if (auth) {
       const envMatch = auth.match(/\$\{?(\w+)\}?/);
       if (envMatch?.[1]) {
         result.bearer_token_env_var = envMatch[1];
@@ -119,4 +119,14 @@ function toCodexServer(server: UnifiedMcpServer): CodexTomlServer | null {
   }
 
   return null;
+}
+
+function getAuthorizationHeaderValue(headers?: Record<string, string>): string | undefined {
+  if (!headers) return undefined;
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === "authorization") {
+      return value;
+    }
+  }
+  return undefined;
 }

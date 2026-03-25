@@ -35,6 +35,10 @@ claude --plugin-dir /path/to/sync-agents-settings
 #   /sync-list          — list all MCP servers
 #   /sync               — sync MCP configs (with dry-run preview)
 #   /sync-diff           — compare configs between agents
+#   /sync-doctor         — detect config drift and parse errors
+#   /sync-validate       — validate schema and target capabilities
+#   /sync-reconcile      — validate + detect drift + sync only missing
+#   /report-schema       — print or write report JSON schema markdown
 #   /sync-instructions   — sync CLAUDE.md to other agents
 ```
 
@@ -85,6 +89,49 @@ sync-agents sync --target codex --codex-home ./my-project/.codex
 # Compare differences
 sync-agents diff
 
+# Check drift / parse errors between Claude and targets
+sync-agents doctor
+
+# Validate source schema and target capability compatibility
+sync-agents validate
+
+# One-shot safe reconcile (validate + doctor + sync missing)
+sync-agents reconcile --dry-run
+
+# CI-friendly JSON output
+sync-agents reconcile --report json
+
+# CI-friendly JSON output for drift checker
+sync-agents doctor --report json
+
+# CI-friendly JSON output for schema/capability validation
+sync-agents validate --report json
+
+# CI-friendly JSON output for sync result
+sync-agents sync --report json --dry-run
+
+# CI-friendly JSON output for instruction sync
+sync-agents sync-instructions --report json --dry-run --global --target gemini
+
+# CI-friendly JSON output for diff result
+sync-agents diff --report json --target gemini codex
+
+# Note: all --report json outputs include `schemaVersion: 1`
+
+Report schema reference: `docs/report-schema.md`
+
+# Regenerate report schema documentation
+sync-agents report-schema --write docs/report-schema.md
+
+# CI check: ensure report schema doc is up to date
+sync-agents report-schema --check
+
+# Auto-fix from doctor (internally runs reconcile)
+sync-agents doctor --fix --dry-run
+
+# Auto-fix after validation passes
+sync-agents validate --fix --dry-run
+
 # Skip OAuth-only servers (e.g. Slack)
 sync-agents sync --skip-oauth
 
@@ -93,6 +140,22 @@ sync-agents sync --no-backup
 
 # Verbose output
 sync-agents sync -v
+
+# Check only specific targets
+sync-agents doctor --target gemini codex
+
+# Check Codex project-level config drift
+sync-agents doctor --target codex --codex-home ./.codex
+
+# Validate only selected targets and ignore OAuth-only servers
+sync-agents validate --target codex opencode --skip-oauth
+
+# Validation semantics:
+# - blank-only command/url values are treated as missing
+# - OAuth-only servers produce manual-setup warnings without duplicate field errors
+
+# Reconcile selected targets only
+sync-agents reconcile --target gemini codex
 
 # Sync instruction files (CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules)
 sync-agents sync-instructions

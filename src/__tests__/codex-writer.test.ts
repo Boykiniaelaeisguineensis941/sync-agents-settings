@@ -258,4 +258,64 @@ describe("writeToCodex", () => {
     const parsed = TOML.parse(written) as any;
     expect(parsed.mcp_servers.bare.url).toBe("https://example.com//path");
   });
+
+  it("extracts bearer token env var from lowercase authorization header", () => {
+    let written = "";
+    const configPath = resolveCodexConfigPath();
+    const codexDir = configPath.replace(/\/config\.toml$/, "");
+
+    mockFs.existsSync.mockImplementation((p) => {
+      if (String(p) === codexDir) return true;
+      return false;
+    });
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      written = String(data);
+    });
+
+    const servers: UnifiedMcpServer[] = [
+      makeServer({
+        name: "auth-lowercase",
+        transport: "http",
+        url: "https://example.com/mcp",
+        headers: {
+          authorization: "Bearer ${MY_TOKEN}",
+        },
+      }),
+    ];
+
+    writeToCodex(servers, false);
+
+    const parsed = TOML.parse(written) as any;
+    expect(parsed.mcp_servers["auth-lowercase"].bearer_token_env_var).toBe("MY_TOKEN");
+  });
+
+  it("does not infer bearer token env var from literal authorization header", () => {
+    let written = "";
+    const configPath = resolveCodexConfigPath();
+    const codexDir = configPath.replace(/\/config\.toml$/, "");
+
+    mockFs.existsSync.mockImplementation((p) => {
+      if (String(p) === codexDir) return true;
+      return false;
+    });
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      written = String(data);
+    });
+
+    const servers: UnifiedMcpServer[] = [
+      makeServer({
+        name: "auth-literal",
+        transport: "http",
+        url: "https://example.com/mcp",
+        headers: {
+          Authorization: "Bearer static-token",
+        },
+      }),
+    ];
+
+    writeToCodex(servers, false);
+
+    const parsed = TOML.parse(written) as any;
+    expect(parsed.mcp_servers["auth-literal"].bearer_token_env_var).toBeUndefined();
+  });
 });

@@ -13,6 +13,7 @@ If no targets specified, sync to all targets.
 The user may also pass flags:
 - `--no-backup` — skip creating backup of target instruction files
 - `--import-mode inline|strip` — how to handle standalone `@import` lines (`inline` = expand, `strip` = remove line)
+- `--report json` — output machine-readable JSON summary (CI-friendly)
 
 ## Execution Flow
 
@@ -40,8 +41,10 @@ The user may also pass flags:
    Add `--no-backup` if the user specified it.
 
 6. Present the final results: which files were synced, appended, or skipped.
+   - If `--report json` is used, return raw JSON output and avoid text post-processing.
 
 ## Error Handling
 
 - If `npx` fails: suggest `npm install -g sync-agents-settings` as fallback.
 - If CLAUDE.md source file doesn't exist: the CLI will report it. Inform the user which file is missing.
+- With `--report json` and non-dry-run mode, pass both `--on-conflict` and `--no-backup` to avoid interactive prompts and non-JSON logs.

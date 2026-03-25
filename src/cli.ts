@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { Command } from "commander";
 import { readClaudeMcpServers } from "./reader.js";
 import { writeToGemini } from "./writers/gemini.js";
@@ -10,6 +11,22 @@ import { writeToCursor } from "./writers/cursor.js";
 import { createBackup, getFilesToBackup } from "./backup.js";
 import { PATHS } from "./paths.js";
 import type { SyncTarget, UnifiedMcpServer } from "./types.js";
+import { runDoctor } from "./doctor.js";
+import { validateServersForTargets } from "./validation.js";
+import { isOAuthOnlyServer } from "./oauth.js";
+import { reconcileTargets, groupValidationByTarget } from "./reconcile.js";
+import { runAutoFix } from "./fix.js";
+import { compareNameSets } from "./diff.js";
+import {
+  formatReconcileReport,
+  formatDoctorReport,
+  formatValidationReport,
+  formatSyncReport,
+  formatSyncInstructionsReport,
+  formatDiffReport,
+} from "./report.js";
+import { generateReportSchemaDocument } from "./report-schema-renderer.js";
+import { checkReportSchemaUpToDate } from "./report-schema-sync.js";
 import {
   syncInstructions,
   getGlobalSyncPairs,
@@ -44,6 +61,7 @@ program
     "--codex-home <path>",
     "Codex config directory (default: ~/.codex, or specify project-level .codex/)"
   )
+  .option("--report <format>", "output format: text or json", "text")
   .option("-v, --verbose", "show detailed output", false)
   .action(async (opts) => {
     const targets = opts.target as SyncTarget[];
@@ -52,63 +70,131 @@ program
     const verbose = opts.verbose as boolean;
     const skipOAuth = opts.skipOauth as boolean;
     const codexHome = opts.codexHome as string | undefined;
+    const reportFormat = opts.report as string;
+    const jsonReport = reportFormat === "json";
 
-    if (dryRun) {
+    if (reportFormat !== "text" && reportFormat !== "json") {
+      console.error(`Invalid --report: ${reportFormat}. Use "text" or "json".`);
+      process.exit(1);
+    }
+
+    if (!jsonReport && dryRun) {
       console.log("🔍 Dry-run mode — no files will be written\n");
     }
 
     // 1. Read Claude MCP servers
-    console.log("📖 Reading Claude Code MCP settings...");
+    if (!jsonReport) {
+      console.log("📖 Reading Claude Code MCP settings...");
+    }
     let servers = readClaudeMcpServers();
 
     if (skipOAuth) {
-      servers = servers.filter((s) => !s.oauth);
+      servers = servers.filter((s) => !isOAuthOnlyServer(s));
     }
 
-    console.log(`  Found ${servers.length} MCP server(s)\n`);
+    if (!jsonReport) {
+      console.log(`  Found ${servers.length} MCP server(s)\n`);
+    }
 
-    if (verbose) {
+    if (!jsonReport && verbose) {
       printServers(servers);
     }
 
     if (servers.length === 0) {
-      console.log("No MCP servers found, exiting.");
+      if (jsonReport) {
+        console.log(
+          formatSyncReport({
+            sourceCount: 0,
+            dryRun,
+            skipOAuth,
+            targets: [],
+          })
+        );
+      } else {
+        console.log("No MCP servers found, exiting.");
+      }
       return;
     }
 
     // 2. Backup
     const codexConfigPath = resolveCodexConfigPath(codexHome);
     if (!skipBackup && !dryRun) {
-      console.log("💾 Backing up config files...");
+      if (!jsonReport) {
+        console.log("💾 Backing up config files...");
+      }
       const backupDir = createBackup(getFilesToBackup(targets, codexConfigPath));
-      console.log(`  Backup directory: ${backupDir}\n`);
+      if (!jsonReport) {
+        console.log(`  Backup directory: ${backupDir}\n`);
+      }
     }
 
     // 3. Sync to targets
+    const targetReports: Array<{
+      target: SyncTarget;
+      added: string[];
+      skipped: string[];
+      configPath?: string;
+    }> = [];
+
     for (const target of targets) {
-      console.log(`🔄 Syncing to ${target.toUpperCase()}...`);
+      if (!jsonReport) {
+        console.log(`🔄 Syncing to ${target.toUpperCase()}...`);
+      }
 
       if (target === "gemini") {
         const result = writeToGemini(servers, dryRun);
-        printResult(result.added, result.skipped);
+        targetReports.push({ target, added: result.added, skipped: result.skipped });
+        if (!jsonReport) {
+          printResult(result.added, result.skipped);
+        }
       } else if (target === "codex") {
         const result = writeToCodex(servers, dryRun, codexHome);
-        console.log(`  Target: ${result.configPath}`);
-        printResult(result.added, result.skipped);
+        targetReports.push({
+          target,
+          added: result.added,
+          skipped: result.skipped,
+          configPath: result.configPath,
+        });
+        if (!jsonReport) {
+          console.log(`  Target: ${result.configPath}`);
+          printResult(result.added, result.skipped);
+        }
       } else if (target === "opencode") {
         const result = writeToOpenCode(servers, dryRun);
-        printResult(result.added, result.skipped);
+        targetReports.push({ target, added: result.added, skipped: result.skipped });
+        if (!jsonReport) {
+          printResult(result.added, result.skipped);
+        }
       } else if (target === "kiro") {
         const result = writeToKiro(servers, dryRun);
-        printResult(result.added, result.skipped);
+        targetReports.push({ target, added: result.added, skipped: result.skipped });
+        if (!jsonReport) {
+          printResult(result.added, result.skipped);
+        }
       } else if (target === "cursor") {
         const result = writeToCursor(servers, dryRun);
-        printResult(result.added, result.skipped);
+        targetReports.push({ target, added: result.added, skipped: result.skipped });
+        if (!jsonReport) {
+          printResult(result.added, result.skipped);
+        }
       }
-      console.log();
+      if (!jsonReport) {
+        console.log();
+      }
     }
 
-    console.log("✅ Sync complete!");
+    if (jsonReport) {
+      console.log(
+        formatSyncReport({
+          sourceCount: servers.length,
+          dryRun,
+          skipOAuth,
+          targets: targetReports,
+        })
+      );
+    } else {
+      console.log("✅ Sync complete!");
+    }
   });
 
 program
@@ -122,6 +208,42 @@ program
   });
 
 program
+  .command("report-schema")
+  .description("Print report JSON schema markdown (or write to a file)")
+  .option("--check", "exit non-zero if target schema file is missing or outdated", false)
+  .option("--write <path>", "write markdown to a file path instead of stdout")
+  .action((opts) => {
+    const content = generateReportSchemaDocument();
+    const checkOnly = opts.check as boolean;
+    const outputPath = opts.write as string | undefined;
+
+    if (checkOnly) {
+      const targetPath = outputPath ?? "docs/report-schema.md";
+      const check = checkReportSchemaUpToDate(targetPath);
+      if (check.upToDate) {
+        console.log(`✅ Report schema is up to date: ${targetPath}`);
+        return;
+      }
+
+      if (check.reason === "missing") {
+        console.error(`❌ Report schema file is missing: ${targetPath}`);
+      } else {
+        console.error(`❌ Report schema file is outdated: ${targetPath}`);
+      }
+      process.exit(1);
+    }
+
+    if (!outputPath) {
+      console.log(content);
+      return;
+    }
+
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, content);
+    console.log(`✅ Report schema written: ${outputPath}`);
+  });
+
+program
   .command("diff")
   .description("Compare MCP settings between Claude Code and other CLIs")
   .option(
@@ -129,12 +251,24 @@ program
     "comparison targets (gemini, codex, opencode, kiro, cursor)",
     ["gemini", "codex", "opencode", "kiro", "cursor"]
   )
+  .option("--report <format>", "output format: text or json", "text")
   .action((opts) => {
     const targets = opts.target as SyncTarget[];
+    const reportFormat = opts.report as string;
+    const jsonReport = reportFormat === "json";
+
+    if (reportFormat !== "text" && reportFormat !== "json") {
+      console.error(`Invalid --report: ${reportFormat}. Use "text" or "json".`);
+      process.exit(1);
+    }
+
     const servers = readClaudeMcpServers();
     const claudeNames = new Set(servers.map((s) => s.name));
+    const sourceNames = [...claudeNames].sort();
 
-    console.log(`Claude Code: ${servers.length} MCP server(s)\n`);
+    if (!jsonReport) {
+      console.log(`Claude Code: ${servers.length} MCP server(s)\n`);
+    }
 
     const diffConfigs: Record<string, { path: string; key?: "mcpServers" | "mcp" }> = {
       gemini: { path: PATHS.geminiSettings },
@@ -142,16 +276,370 @@ program
       kiro: { path: PATHS.kiroMcpConfig },
       cursor: { path: PATHS.cursorMcpConfig },
     };
+    const targetReports: Array<{
+      target: string;
+      shared: string[];
+      onlyInSource: string[];
+      onlyInTarget: string[];
+      note?: string;
+    }> = [];
 
     for (const target of targets) {
       if (target === "codex") {
-        console.log(`  Codex: use 'codex mcp list' to view`);
+        const codexNote = "use 'codex mcp list' to view";
+        if (!jsonReport) {
+          console.log(`  Codex: ${codexNote}`);
+        }
+        targetReports.push({
+          target: "codex",
+          shared: [],
+          onlyInSource: [],
+          onlyInTarget: [],
+          note: codexNote,
+        });
       } else if (Object.hasOwn(diffConfigs, target)) {
         const { path, key } = diffConfigs[target];
         const names = readExistingServerNames(path, key);
-        printDiff(target.charAt(0).toUpperCase() + target.slice(1), claudeNames, names);
+        const compared = compareNameSets(claudeNames, names);
+        targetReports.push({
+          target,
+          shared: compared.shared,
+          onlyInSource: compared.onlyInSource,
+          onlyInTarget: compared.onlyInTarget,
+        });
+        if (!jsonReport) {
+          printDiff(
+            target.charAt(0).toUpperCase() + target.slice(1),
+            compared.shared,
+            compared.onlyInSource,
+            compared.onlyInTarget
+          );
+        }
       }
     }
+
+    if (jsonReport) {
+      console.log(
+        formatDiffReport({
+          sourceCount: servers.length,
+          sourceNames,
+          targets: targetReports,
+        })
+      );
+    }
+  });
+
+program
+  .command("doctor")
+  .description("Detect MCP config drift between Claude Code and target CLIs")
+  .option(
+    "-t, --target <targets...>",
+    "doctor targets (gemini, codex, opencode, kiro, cursor)",
+    ["gemini", "codex", "opencode", "kiro", "cursor"]
+  )
+  .option("--skip-oauth", "ignore OAuth-only Claude servers", false)
+  .option("--fix", "auto-run reconcile when drift is detected", false)
+  .option("--dry-run", "when used with --fix, preview without writing", false)
+  .option("--no-backup", "when used with --fix, skip backup")
+  .option("--report <format>", "output format: text or json", "text")
+  .option(
+    "--codex-home <path>",
+    "Codex config directory (default: ~/.codex, or specify project-level .codex/)"
+  )
+  .action((opts) => {
+    const targets = opts.target as SyncTarget[];
+    const skipOAuth = opts.skipOauth as boolean;
+    const fix = opts.fix as boolean;
+    const dryRun = opts.dryRun as boolean;
+    const skipBackup = !opts.backup;
+    const reportFormat = opts.report as string;
+    const codexHome = opts.codexHome as string | undefined;
+    const jsonReport = reportFormat === "json";
+
+    if (reportFormat !== "text" && reportFormat !== "json") {
+      console.error(`Invalid --report: ${reportFormat}. Use "text" or "json".`);
+      process.exit(1);
+    }
+
+    if (fix) {
+      if (jsonReport) {
+        console.error("--report json is not supported with --fix for doctor. Use reconcile --report json.");
+        process.exit(1);
+      }
+      const fixed = runAutoFix({
+        mode: "doctor",
+        targets,
+        dryRun,
+        skipBackup,
+        skipOAuth,
+        codexHome,
+      });
+      if (fixed.status === "failed") {
+        if (fixed.reason === "doctor_parse") {
+          console.error("❌ Auto-fix failed: target config parse error. Fix target config and retry.");
+        } else if (fixed.reason === "validation") {
+          console.error("❌ Auto-fix failed: validation errors detected.");
+        } else {
+          console.error("❌ Auto-fix failed.");
+        }
+        process.exit(2);
+      }
+      if (fixed.status === "noop") {
+        console.log("✅ No drift detected. Nothing to fix.");
+        return;
+      }
+      console.log("✅ Auto-fix completed via reconcile.");
+      return;
+    }
+
+    const report = runDoctor(targets, { skipOAuth, codexHome });
+
+    if (jsonReport) {
+      console.log(formatDoctorReport(report));
+      if (report.hasErrors) process.exit(2);
+      if (report.hasDrift) process.exit(1);
+      return;
+    }
+
+    console.log("🩺 MCP drift doctor\n");
+    console.log(`Claude Code source servers: ${report.sourceCount}\n`);
+
+    for (const result of report.results) {
+      const label = getTargetLabel(result.target);
+      console.log(`--- ${label} ---`);
+
+      if (result.status === "unavailable") {
+        console.log(`  ⚠ Unavailable: ${result.note ?? "target directory not found"}`);
+      } else if (result.status === "error") {
+        console.log(`  ❌ Parse error: ${result.note ?? "unable to read target config"}`);
+      } else if (result.status === "ok") {
+        console.log("  ✅ No drift");
+      } else {
+        if (result.missing.length > 0) {
+          console.log(`  Missing in ${label}: ${result.missing.join(", ")}`);
+        }
+        if (result.extra.length > 0) {
+          console.log(`  Extra in ${label}: ${result.extra.join(", ")}`);
+        }
+      }
+
+      console.log();
+    }
+
+    if (report.hasErrors) {
+      console.error("Config parse error detected. Please fix target config file(s) and retry.");
+      process.exit(2);
+    }
+
+    if (report.hasDrift) {
+      console.error("Drift detected. Run sync to reconcile.");
+      process.exit(1);
+    }
+
+    console.log("✅ All checked targets are in sync.");
+  });
+
+program
+  .command("validate")
+  .description("Validate MCP schema and target capability compatibility")
+  .option(
+    "-t, --target <targets...>",
+    "validation targets (gemini, codex, opencode, kiro, cursor)",
+    ["gemini", "codex", "opencode", "kiro", "cursor"]
+  )
+  .option("--skip-oauth", "ignore OAuth-only Claude servers", false)
+  .option("--fix", "auto-run reconcile after validation passes", false)
+  .option("--dry-run", "when used with --fix, preview without writing", false)
+  .option("--no-backup", "when used with --fix, skip backup")
+  .option("--report <format>", "output format: text or json", "text")
+  .option(
+    "--codex-home <path>",
+    "Codex config directory (used by --fix for reconcile)"
+  )
+  .action((opts) => {
+    const targets = opts.target as SyncTarget[];
+    const skipOAuth = opts.skipOauth as boolean;
+    const fix = opts.fix as boolean;
+    const dryRun = opts.dryRun as boolean;
+    const skipBackup = !opts.backup;
+    const reportFormat = opts.report as string;
+    const codexHome = opts.codexHome as string | undefined;
+    const jsonReport = reportFormat === "json";
+
+    if (reportFormat !== "text" && reportFormat !== "json") {
+      console.error(`Invalid --report: ${reportFormat}. Use "text" or "json".`);
+      process.exit(1);
+    }
+
+    if (fix && jsonReport) {
+      console.error("--report json is not supported with --fix for validate. Use reconcile --report json.");
+      process.exit(1);
+    }
+
+    const servers = readClaudeMcpServers();
+    const report = validateServersForTargets(servers, targets, { skipOAuth });
+
+    if (jsonReport) {
+      console.log(formatValidationReport(report));
+      if (report.errorCount > 0) {
+        process.exit(2);
+      }
+      return;
+    }
+
+    console.log("🧪 MCP schema/capability validation\n");
+    console.log(`Checked servers: ${skipOAuth ? "OAuth-skipped subset" : servers.length}`);
+    console.log(`Targets: ${targets.join(", ")}\n`);
+
+    if (report.issues.length === 0 && !fix) {
+      console.log("✅ No schema/capability issues found.");
+      return;
+    }
+
+    if (report.issues.length === 0) {
+      console.log("✅ No schema/capability issues found.");
+    }
+
+    for (const target of targets) {
+      const targetIssues = report.issues.filter((issue) => issue.target === target);
+      if (targetIssues.length === 0) continue;
+
+      const label = getTargetLabel(target);
+      console.log(`--- ${label} ---`);
+      for (const issue of targetIssues) {
+        const icon = issue.severity === "error" ? "❌" : "⚠";
+        console.log(`  ${icon} [${issue.code}] ${issue.server}: ${issue.message}`);
+      }
+      console.log();
+    }
+
+    if (report.issues.length > 0) {
+      console.log(`Summary: ${report.errorCount} error(s), ${report.warningCount} warning(s)`);
+    }
+
+    if (report.errorCount > 0) {
+      process.exit(2);
+    }
+
+    if (fix) {
+      const fixed = runAutoFix({
+        mode: "validate",
+        targets,
+        dryRun,
+        skipBackup,
+        skipOAuth,
+        codexHome,
+      });
+      if (fixed.status === "failed") {
+        if (fixed.reason === "doctor_parse") {
+          console.error("❌ Auto-fix failed: target config parse error. Fix target config and retry.");
+        } else if (fixed.reason === "validation") {
+          console.error("❌ Auto-fix failed: validation errors detected.");
+        } else {
+          console.error("❌ Auto-fix failed.");
+        }
+        process.exit(2);
+      }
+      if (fixed.status === "noop") {
+        console.log("✅ No drift detected. Nothing to fix.");
+        return;
+      }
+      console.log("✅ Auto-fix completed via reconcile.");
+    }
+  });
+
+program
+  .command("reconcile")
+  .description("Validate + detect drift + sync only missing MCP servers")
+  .option(
+    "-t, --target <targets...>",
+    "reconcile targets (gemini, codex, opencode, kiro, cursor)",
+    ["gemini", "codex", "opencode", "kiro", "cursor"]
+  )
+  .option("--dry-run", "preview mode, no files will be written", false)
+  .option("--no-backup", "skip backup")
+  .option("--skip-oauth", "ignore OAuth-only Claude servers", false)
+  .option(
+    "--codex-home <path>",
+    "Codex config directory (default: ~/.codex, or specify project-level .codex/)"
+  )
+  .option("--report <format>", "output format: text or json", "text")
+  .action((opts) => {
+    const targets = opts.target as SyncTarget[];
+    const dryRun = opts.dryRun as boolean;
+    const skipBackup = !opts.backup;
+    const skipOAuth = opts.skipOauth as boolean;
+    const codexHome = opts.codexHome as string | undefined;
+    const reportFormat = opts.report as string;
+    const jsonReport = reportFormat === "json";
+
+    if (reportFormat !== "text" && reportFormat !== "json") {
+      console.error(`Invalid --report: ${reportFormat}. Use "text" or "json".`);
+      process.exit(1);
+    }
+
+    if (!jsonReport && dryRun) {
+      console.log("🔍 Dry-run mode — no files will be written\n");
+    }
+
+    const result = reconcileTargets(targets, { dryRun, skipBackup, skipOAuth, codexHome });
+
+    if (jsonReport) {
+      console.log(formatReconcileReport(result));
+      if (result.status === "validation_failed" || result.status === "doctor_failed") {
+        process.exit(2);
+      }
+      return;
+    }
+
+    if (result.status === "validation_failed") {
+      console.error("❌ Validation failed. Fix schema errors before reconcile.\n");
+      const grouped = groupValidationByTarget(result.validation.issues, targets);
+      for (const target of targets) {
+        const issues = grouped[target].filter((issue) => issue.severity === "error");
+        if (issues.length === 0) continue;
+        console.error(`--- ${getTargetLabel(target)} ---`);
+        for (const issue of issues) {
+          console.error(`  ❌ [${issue.code}] ${issue.server}: ${issue.message}`);
+        }
+        console.error();
+      }
+      process.exit(2);
+    }
+
+    if (result.status === "doctor_failed") {
+      console.error("❌ Target config parse error detected. Fix target config and retry.");
+      process.exit(2);
+    }
+
+    if (result.validation.warningCount > 0) {
+      console.log(`⚠ Validation warnings: ${result.validation.warningCount}\n`);
+    }
+
+    if (result.status === "noop") {
+      console.log("✅ No drift detected. Nothing to reconcile.");
+      return;
+    }
+
+    if (result.backupDir) {
+      console.log(`💾 Backup directory: ${result.backupDir}\n`);
+    }
+
+    console.log("🔄 Reconcile results\n");
+    for (const syncResult of result.syncResults) {
+      const label = getTargetLabel(syncResult.target);
+      console.log(`--- ${label} ---`);
+      console.log(`  Missing before reconcile: ${syncResult.missing.join(", ")}`);
+      if (syncResult.added.length > 0) {
+        console.log(`  ✅ Added: ${syncResult.added.join(", ")}`);
+      }
+      if (syncResult.skipped.length > 0) {
+        console.log(`  ⏭  Skipped: ${syncResult.skipped.join(", ")}`);
+      }
+      console.log();
+    }
+
+    console.log("✅ Reconcile complete!");
   });
 
 program
@@ -173,6 +661,7 @@ program
   .option("--dry-run", "preview mode, no files will be written", false)
   .option("--no-backup", "skip backup")
   .option("--import-mode <mode>", "how to handle standalone @imports: inline or strip", "inline")
+  .option("--report <format>", "output format: text or json", "text")
   .option(
     "--on-conflict <action>",
     "action when target exists: overwrite, append, skip (skips interactive prompt)"
@@ -185,6 +674,24 @@ program
     const skipBackup = !opts.backup;
     const onConflict = opts.onConflict as ConflictAction | undefined;
     const importMode = opts.importMode as ImportMode;
+    const reportFormat = opts.report as string;
+    const jsonReport = reportFormat === "json";
+    const forceAction = onConflict ?? (jsonReport ? "overwrite" : undefined);
+
+    if (reportFormat !== "text" && reportFormat !== "json") {
+      console.error(`Invalid --report: ${reportFormat}. Use "text" or "json".`);
+      process.exit(1);
+    }
+
+    if (jsonReport && !dryRun && !skipBackup) {
+      console.error("--report json requires --no-backup when not using --dry-run.");
+      process.exit(1);
+    }
+
+    if (jsonReport && !dryRun && !onConflict) {
+      console.error("--report json requires --on-conflict when not using --dry-run.");
+      process.exit(1);
+    }
 
     if (importMode !== "inline" && importMode !== "strip") {
       console.error(`Invalid --import-mode: ${importMode}. Use "inline" or "strip".`);
@@ -195,32 +702,69 @@ program
     const doGlobal = syncGlobal || (!syncGlobal && !syncLocal);
     const doLocal = syncLocal || (!syncGlobal && !syncLocal);
 
-    if (dryRun) {
+    if (!jsonReport && dryRun) {
       console.log("🔍 Dry-run mode — no files will be written\n");
     }
 
+    const unsupported = doGlobal ? getUnsupportedGlobalTargets(targets) : [];
+    let globalResult:
+      | {
+          synced: string[];
+          skipped: string[];
+          appended: string[];
+        }
+      | undefined;
+    let localResult:
+      | {
+          synced: string[];
+          skipped: string[];
+          appended: string[];
+        }
+      | undefined;
+
     // Global sync
     if (doGlobal) {
-      console.log("📋 Syncing global instructions (~/.claude/CLAUDE.md)...\n");
-
-      const unsupported = getUnsupportedGlobalTargets(targets);
-      for (const msg of unsupported) {
-        console.log(`  ⚠  ${msg}`);
+      if (!jsonReport) {
+        console.log("📋 Syncing global instructions (~/.claude/CLAUDE.md)...\n");
+        for (const msg of unsupported) {
+          console.log(`  ⚠  ${msg}`);
+        }
       }
 
       const pairs = getGlobalSyncPairs(targets);
-      backupTargets(pairs, skipBackup, dryRun);
-      const result = await syncInstructions(pairs, { dryRun, force: onConflict, importMode });
-      printInstructionsResult(result);
+      if (!jsonReport) {
+        backupTargets(pairs, skipBackup, dryRun);
+      }
+      globalResult = await syncInstructions(pairs, { dryRun, force: forceAction, importMode });
+      if (!jsonReport) {
+        printInstructionsResult(globalResult);
+      }
     }
 
     // Local sync
     if (doLocal) {
-      console.log("📋 Syncing local instructions (./.claude/CLAUDE.md or ./CLAUDE.md)...\n");
+      if (!jsonReport) {
+        console.log("📋 Syncing local instructions (./.claude/CLAUDE.md or ./CLAUDE.md)...\n");
+      }
       const pairs = getLocalSyncPairs(targets, process.cwd());
-      backupTargets(pairs, skipBackup, dryRun);
-      const result = await syncInstructions(pairs, { dryRun, force: onConflict, importMode });
-      printInstructionsResult(result);
+      if (!jsonReport) {
+        backupTargets(pairs, skipBackup, dryRun);
+      }
+      localResult = await syncInstructions(pairs, { dryRun, force: forceAction, importMode });
+      if (!jsonReport) {
+        printInstructionsResult(localResult);
+      }
+    }
+
+    if (jsonReport) {
+      console.log(
+        formatSyncInstructionsReport({
+          unsupportedGlobalTargets: unsupported,
+          global: globalResult,
+          local: localResult,
+        })
+      );
+      return;
     }
 
     console.log("✅ Instructions sync complete!");
@@ -268,11 +812,12 @@ function readExistingServerNames(
   }
 }
 
-function printDiff(targetName: string, claudeNames: Set<string>, targetNames: Set<string>) {
-  const onlyInClaude = [...claudeNames].filter((n) => !targetNames.has(n));
-  const onlyInTarget = [...targetNames].filter((n) => !claudeNames.has(n));
-  const shared = [...claudeNames].filter((n) => targetNames.has(n));
-
+function printDiff(
+  targetName: string,
+  shared: string[],
+  onlyInClaude: string[],
+  onlyInTarget: string[]
+) {
   console.log(`--- ${targetName} comparison ---`);
   if (shared.length > 0) {
     console.log(`  Shared: ${shared.join(", ")}`);
@@ -310,6 +855,10 @@ function printResult(added: string[], skipped: string[]) {
   if (added.length === 0 && skipped.length === 0) {
     console.log("  No servers to sync");
   }
+}
+
+function getTargetLabel(target: SyncTarget): string {
+  return target === "opencode" ? "OpenCode" : target.toUpperCase();
 }
 
 program.parse();

@@ -10,6 +10,9 @@ Compare which MCP servers exist in Claude Code vs other AI agents.
 The user may pass target names: `/sync-diff gemini`
 If no targets specified, compare all targets (gemini, codex, opencode, kiro, cursor).
 
+Optional flags:
+- `--report json` — output machine-readable JSON summary (CI-friendly)
+
 ## Execution Flow
 
 1. Parse targets from user arguments. Run:
@@ -21,6 +24,7 @@ If no targets specified, compare all targets (gemini, codex, opencode, kiro, cur
    - **Only in target** — servers that exist in the target but not in Claude
 
 3. If there are servers "Only in Claude", suggest: "Run `/sync` to sync these servers to the target agents."
+   - If `--report json` is used, return raw JSON output and avoid text post-processing.
 
 ## Error Handling
 

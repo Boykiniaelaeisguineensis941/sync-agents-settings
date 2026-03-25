@@ -12,6 +12,16 @@ pnpm lint               # ESLint check
 pnpm format:check       # Prettier check
 pnpm format             # Prettier auto-fix
 pnpm dev list           # Run CLI from source (tsx)
+pnpm dev doctor         # Check MCP drift from source without writing files
+pnpm dev validate       # Validate schema/capability compatibility before syncing
+pnpm dev reconcile      # Run validate + doctor + sync missing in one flow
+pnpm dev doctor -- --fix --dry-run   # Auto-fix drift via reconcile (preview)
+pnpm dev reconcile -- --report json   # Machine-readable output for CI integration
+pnpm dev sync -- --report json --dry-run   # Machine-readable sync preview
+pnpm dev sync-instructions -- --report json --dry-run --global --target gemini   # Machine-readable instruction sync preview
+pnpm dev diff -- --report json --target gemini codex   # Machine-readable diff output
+pnpm dev report-schema -- --write docs/report-schema.md   # Regenerate report schema markdown from code
+pnpm dev report-schema -- --check   # CI check for stale/missing report schema doc
 bash ci-local.sh        # Run full local CI (format + lint + typecheck + build + test)
 ```
 
@@ -65,6 +75,14 @@ src/prompt.ts
 - `src/env.ts` — `expandEnvVars()` resolves `${VAR:-default}` syntax for targets that don't support it (Codex, OpenCode, Kiro, Cursor)
 - `src/backup.ts` — copies all affected config files to `~/.sync-agents-backup/<timestamp>/` before writing
 - `src/paths.ts` — centralized config file paths for all targets (MCP + instruction paths)
+- `src/doctor.ts` — drift/health checker that compares Claude source MCP names against each target and reports missing/extra/unavailable/parse-error states
+- `src/validation.ts` — schema/capability validator for pre-sync checks (blank command/url treated as missing errors, OAuth-only reported as manual-setup warning, plus target-specific mapping warnings)
+- `src/reconcile.ts` — orchestration layer that runs validate + doctor and then syncs only drift-missing servers per target
+- `src/fix.ts` — shared auto-fix entrypoint for `doctor --fix` / `validate --fix` (delegates to reconcile with guard checks)
+- `src/report.ts` — report formatter for CI-friendly machine-readable outputs (`doctor` / `validate` / `reconcile`)
+- `src/report-parser.ts` — stable parser helper that validates JSON reports by `schemaVersion` for consumer-side compatibility checks
+- `src/report-schema-renderer.ts` — renders required-field markdown from parser validator metadata for documentation sync
+- `src/diff.ts` — reusable set comparison utility used by text/JSON diff outputs
 - `src/instructions.ts` — instruction file sync logic with source caching and transform pipeline
 - `src/prompt.ts` — interactive conflict resolution (overwrite/append/skip)
 
