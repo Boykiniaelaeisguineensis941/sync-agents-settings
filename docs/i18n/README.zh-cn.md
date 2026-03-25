@@ -7,14 +7,14 @@
 [![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2)](https://modelcontextprotocol.io/)
 [![CI](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml/badge.svg)](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml)
 
-将 **Claude Code** 的 MCP server 配置和指令文件（CLAUDE.md）同步到 **Gemini CLI**、**Codex CLI**、**OpenCode**、**Kiro CLI**、**Cursor** 和 **Kimi CLI**。
+将 **Claude Code** 的 MCP server 配置和指令文件（CLAUDE.md）同步到 **Gemini CLI**、**Codex CLI**、**OpenCode**、**Kiro CLI**、**Cursor**、**Kimi CLI** 和 **Aider CLI**。
 
 **其他语言：** [🇺🇸 English](../../README.md) | [🇹🇼 繁體中文](README.zh-tw.md) | [🇯🇵 日本語](README.ja.md) | [🇰🇷 한국어](README.ko.md)
 **支持矩阵：** [CLI 兼容性矩阵](../compatibility-matrix.md)
 
 ## 为什么需要这个工具
 
-如果你主要用 Claude Code 开发，但也会切换其他 AI agent（Gemini CLI、Codex CLI、OpenCode、Kiro、Cursor、Kimi CLI）来利用各家的免费额度或不同模型，你一定知道这个痛点——每个工具的 MCP 配置格式都不一样，一个一个配置实在太累。
+如果你主要用 Claude Code 开发，但也会切换其他 AI agent（Gemini CLI、Codex CLI、OpenCode、Kiro、Cursor、Kimi CLI、Aider CLI）来利用各家的免费额度或不同模型，你一定知道这个痛点——每个工具的 MCP 配置格式都不一样，一个一个配置实在太累。
 
 指令文件也是一样——CLAUDE.md、GEMINI.md、AGENTS.md 都需要相同的内容，但格式各不相同。
 
@@ -97,7 +97,7 @@ sync-agents sync --no-backup
 # 详细输出
 sync-agents sync -v
 
-# 同步指令文件（CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules）
+# 同步指令文件（CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules / Aider conventions）
 sync-agents sync-instructions
 
 # 只同步全局指令
@@ -107,7 +107,7 @@ sync-agents sync-instructions --global
 sync-agents sync-instructions --local
 
 # 同步到特定目标
-sync-agents sync-instructions --target gemini codex kimi
+sync-agents sync-instructions --target gemini codex kimi aider
 
 # 自动覆盖不询问（适用于 CI）
 sync-agents sync-instructions --on-conflict overwrite
@@ -157,6 +157,7 @@ sync-agents sync-instructions --dry-run
 | Codex | `~/.codex/AGENTS.md` | `./AGENTS.md` | 直接复制（展开独立行 `@import`） |
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md`（与 Codex 共用） | 直接复制（展开独立行 `@import`） |
 | Kimi | `~/.kimi/AGENTS.md` | `./AGENTS.md`（与 Codex / OpenCode 共用） | 直接复制（展开独立行 `@import`） |
+| Aider | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | 直接复制 + 自动更新 `.aider.conf.yml` `read` |
 | Kiro | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | 加上 `inclusion: always` frontmatter |
 | Cursor | 不支持（SQLite） | `.cursor/rules/claude-instructions.mdc` | 加上 `alwaysApply: true` frontmatter |
 
@@ -169,6 +170,7 @@ sync-agents sync-instructions --dry-run
 - `@import` 默认是 `inline`（展开内容），可用 `--import-mode strip` 改为只移除独立行 `@import`。
 - 默认只允许独立行 `@import` 读取当前项目根目录内文件；如需放宽可加 `--allow-unsafe-imports`。
 - 内联展开有防护上限（最大深度 20、最大文件数 200），避免递归展开失控。
+- Aider 同步会自动补上 `.aider.conf.yml` 的 `read`，让 `CONVENTIONS.md` 在 global/project 都可自动加载。
 - Kimi CLI 当前只会从工作目录加载 `AGENTS.md`；`~/.kimi/AGENTS.md` 会作为可复用的全局模板同步。
 
 ## 安全机制
@@ -204,6 +206,7 @@ sync-agents sync-instructions --dry-run
 | Codex CLI | `~/.codex/AGENTS.md` | `./AGENTS.md` | Markdown |
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` | Markdown |
 | Kimi CLI | `~/.kimi/AGENTS.md` | `./AGENTS.md` | Markdown |
+| Aider CLI | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | Markdown |
 | Kiro CLI | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Markdown + frontmatter |
 | Cursor | 不支持（SQLite） | `.cursor/rules/claude-instructions.mdc` | MDC（Markdown + frontmatter） |
 

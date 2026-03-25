@@ -12,10 +12,14 @@ const FAKE_HOME = join(TEST_DIR, "home");
 const claudeDir = join(FAKE_HOME, ".claude");
 const geminiDir = join(FAKE_HOME, ".gemini");
 const codexDir = join(FAKE_HOME, ".codex");
+const aiderDir = join(FAKE_HOME, ".aider");
+const projectDir = join(TEST_DIR, "project");
 const pluginCacheDir = join(claudeDir, "plugins", "cache", "test-mkt", "my-plugin", "1.0.0");
+const TSX_BIN = join(process.cwd(), "node_modules", ".bin", "tsx");
+const CLI_ENTRY = join(process.cwd(), "src", "cli.ts");
 
 function runCli(...args: string[]): string {
-  return execFileSync("npx", ["tsx", join(process.cwd(), "src", "cli.ts"), ...args], {
+  return execFileSync(TSX_BIN, [CLI_ENTRY, ...args], {
     encoding: "utf-8",
     env: {
       ...process.env,
@@ -26,8 +30,20 @@ function runCli(...args: string[]): string {
   });
 }
 
+function runCliAt(cwd: string, ...args: string[]): string {
+  return execFileSync(TSX_BIN, [CLI_ENTRY, ...args], {
+    encoding: "utf-8",
+    cwd,
+    env: {
+      ...process.env,
+      HOME: FAKE_HOME,
+    },
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+}
+
 function runCliWithStatus(...args: string[]): { status: number | null; stdout: string; stderr: string } {
-  const result = spawnSync("npx", ["tsx", join(process.cwd(), "src", "cli.ts"), ...args], {
+  const result = spawnSync(TSX_BIN, [CLI_ENTRY, ...args], {
     encoding: "utf-8",
     env: {
       ...process.env,
@@ -48,6 +64,8 @@ beforeEach(() => {
   mkdirSync(claudeDir, { recursive: true });
   mkdirSync(geminiDir, { recursive: true });
   mkdirSync(codexDir, { recursive: true });
+  mkdirSync(aiderDir, { recursive: true });
+  mkdirSync(join(projectDir, ".claude"), { recursive: true });
   mkdirSync(pluginCacheDir, { recursive: true });
 
   // Write .claude.json with MCP servers
@@ -89,6 +107,8 @@ beforeEach(() => {
 
   // Write existing gemini settings (should be preserved)
   writeFileSync(join(geminiDir, "settings.json"), JSON.stringify({ theme: "Dark", vimMode: true }));
+  writeFileSync(join(claudeDir, "CLAUDE.md"), "# Global Instructions\nUse pnpm");
+  writeFileSync(join(projectDir, ".claude", "CLAUDE.md"), "# Project Instructions\nUse pnpm");
 });
 
 afterEach(() => {
@@ -196,5 +216,42 @@ describe("E2E: CLI commands", () => {
   it("validate --fix --dry-run exits successfully (smoke)", () => {
     const result = runCliWithStatus("validate", "--fix", "--dry-run", "--target", "gemini");
     expect(result.status).toBe(0);
+  });
+
+  it("sync-instructions writes global aider conventions and updates .aider.conf.yml", () => {
+    runCli(
+      "sync-instructions",
+      "--target",
+      "aider",
+      "--global",
+      "--on-conflict",
+      "overwrite",
+      "--no-backup"
+    );
+
+    const conventions = readFileSync(join(aiderDir, "CONVENTIONS.md"), "utf-8");
+    const aiderConf = readFileSync(join(FAKE_HOME, ".aider.conf.yml"), "utf-8");
+    expect(conventions).toContain("Global Instructions");
+    expect(aiderConf).toContain("read:");
+    expect(aiderConf).toContain(join(aiderDir, "CONVENTIONS.md"));
+  });
+
+  it("sync-instructions writes project aider conventions and updates project .aider.conf.yml", () => {
+    runCliAt(
+      projectDir,
+      "sync-instructions",
+      "--target",
+      "aider",
+      "--local",
+      "--on-conflict",
+      "overwrite",
+      "--no-backup"
+    );
+
+    const conventions = readFileSync(join(projectDir, ".aider", "CONVENTIONS.md"), "utf-8");
+    const aiderConf = readFileSync(join(projectDir, ".aider.conf.yml"), "utf-8");
+    expect(conventions).toContain("Project Instructions");
+    expect(aiderConf).toContain("read:");
+    expect(aiderConf).toContain(".aider/CONVENTIONS.md");
   });
 });

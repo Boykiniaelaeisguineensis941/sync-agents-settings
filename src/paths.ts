@@ -35,6 +35,8 @@ export const PATHS = {
   openCodeMdGlobal: join(HOME, ".config", "opencode", "AGENTS.md"),
   kiroSteeringGlobal: join(HOME, ".kiro", "steering", "claude-instructions.md"),
   kimiMdGlobal: join(HOME, ".kimi", "AGENTS.md"),
+  aiderConventionsGlobal: join(HOME, ".aider", "CONVENTIONS.md"),
+  aiderConfigGlobal: join(HOME, ".aider.conf.yml"),
 
   // Backups
   backupDir: join(HOME, ".sync-agents-backup"),

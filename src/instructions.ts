@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { PATHS } from "./paths.js";
 import { askConflictAction, type ConflictAction } from "./prompt.js";
 
-export type InstructionsTarget = "gemini" | "codex" | "opencode" | "kiro" | "cursor" | "kimi";
+export type InstructionsTarget = "gemini" | "codex" | "opencode" | "kiro" | "cursor" | "kimi" | "aider";
 export type ImportMode = "inline" | "strip";
 
 interface SyncPair {
@@ -13,6 +13,8 @@ interface SyncPair {
   targetLabel: string;
   /** Optional content transform before writing (e.g. Kiro frontmatter injection) */
   transform?: (content: string) => string;
+  /** Optional side effect after write (e.g. syncing secondary config files). */
+  postWrite?: (options: { dryRun: boolean }) => void;
 }
 
 const STANDALONE_IMPORT_LINE = /^@(\S+)\s*$/;
@@ -49,6 +51,77 @@ export function wrapForCursor(content: string): string {
     '---\ndescription: "Project instructions synced from CLAUDE.md"\nalwaysApply: true\n---\n\n' +
     stripExistingFrontmatter(content)
   );
+}
+
+function normalizeYamlScalar(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function upsertReadListEntry(configBody: string, entry: string): string {
+  const lines = configBody.split("\n");
+  const blockIndex = lines.findIndex((line) => /^(\s*)read:\s*$/.test(line));
+
+  if (blockIndex >= 0) {
+    const baseIndent = lines[blockIndex]?.match(/^(\s*)read:\s*$/)?.[1] ?? "";
+    let end = blockIndex + 1;
+    while (end < lines.length) {
+      const current = lines[end] ?? "";
+      if (current.trim() === "") {
+        end += 1;
+        continue;
+      }
+      const leading = current.match(/^(\s*)/)?.[1] ?? "";
+      if (leading.length <= baseIndent.length) {
+        break;
+      }
+      end += 1;
+    }
+
+    const hasEntry = lines
+      .slice(blockIndex + 1, end)
+      .some((line) => normalizeYamlScalar(line.trim().replace(/^-\s*/, "")) === entry);
+    if (hasEntry) return configBody;
+
+    lines.splice(end, 0, `${baseIndent}  - ${entry}`);
+    return lines.join("\n");
+  }
+
+  const inlineIndex = lines.findIndex((line) => /^(\s*)read:\s*\[(.*)\]\s*$/.test(line));
+  if (inlineIndex >= 0) {
+    const match = lines[inlineIndex]?.match(/^(\s*)read:\s*\[(.*)\]\s*$/);
+    const baseIndent = match?.[1] ?? "";
+    const body = match?.[2] ?? "";
+    const existing = body
+      .split(",")
+      .map((part) => normalizeYamlScalar(part))
+      .filter(Boolean);
+    if (existing.includes(entry)) return configBody;
+    const merged = [...existing, entry];
+    const replacement = [`${baseIndent}read:`, ...merged.map((item) => `${baseIndent}  - ${item}`)];
+    lines.splice(inlineIndex, 1, ...replacement);
+    return lines.join("\n");
+  }
+
+  if (configBody.trim() === "") {
+    return `read:\n  - ${entry}\n`;
+  }
+  const suffix = configBody.endsWith("\n") ? "" : "\n";
+  return `${configBody}${suffix}\nread:\n  - ${entry}\n`;
+}
+
+function ensureAiderReadEntry(configPath: string, rulePath: string, dryRun: boolean): void {
+  const current = existsSync(configPath) ? readFileSync(configPath, "utf-8") : "";
+  const updated = upsertReadListEntry(current, rulePath);
+  if (updated === current || dryRun) return;
+  mkdirSync(dirname(configPath), { recursive: true });
+  writeFileSync(configPath, updated);
 }
 
 /**
@@ -88,6 +161,15 @@ export function getGlobalSyncPairs(targets: InstructionsTarget[]): SyncPair[] {
         source: PATHS.claudeMdGlobal,
         target: PATHS.kimiMdGlobal,
         targetLabel: "Kimi CLI (~/.kimi/AGENTS.md)",
+      });
+    } else if (target === "aider") {
+      pairs.push({
+        source: PATHS.claudeMdGlobal,
+        target: PATHS.aiderConventionsGlobal,
+        targetLabel: "Aider CLI (~/.aider/CONVENTIONS.md)",
+        postWrite: ({ dryRun }) => {
+          ensureAiderReadEntry(PATHS.aiderConfigGlobal, PATHS.aiderConventionsGlobal, dryRun);
+        },
       });
     }
     // Cursor global rules are stored in SQLite, not supported for global sync
@@ -156,6 +238,16 @@ export function getLocalSyncPairs(targets: InstructionsTarget[], cwd: string): S
         target: resolve(cwd, ".cursor", "rules", "claude-instructions.mdc"),
         targetLabel: "Cursor (.cursor/rules/claude-instructions.mdc)",
         transform: wrapForCursor,
+      });
+    } else if (target === "aider") {
+      const conventionsPath = resolve(cwd, ".aider", "CONVENTIONS.md");
+      pairs.push({
+        source,
+        target: conventionsPath,
+        targetLabel: "Aider CLI (.aider/CONVENTIONS.md)",
+        postWrite: ({ dryRun }) => {
+          ensureAiderReadEntry(resolve(cwd, ".aider.conf.yml"), ".aider/CONVENTIONS.md", dryRun);
+        },
       });
     }
   }
@@ -559,12 +651,14 @@ export async function syncInstructions(
         writeFileSync(pair.target, content + "\n");
         result.synced.push(pair.targetLabel);
       }
+      pair.postWrite?.({ dryRun: false });
     } else {
       if (action === "append") {
         result.appended.push(pair.targetLabel);
       } else {
         result.synced.push(pair.targetLabel);
       }
+      pair.postWrite?.({ dryRun: true });
     }
   }
 

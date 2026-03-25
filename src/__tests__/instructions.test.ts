@@ -88,10 +88,25 @@ describe("getGlobalSyncPairs", () => {
     expect(pairs[0].target).toBe(PATHS.kimiMdGlobal);
   });
 
-  it("returns all five pairs (cursor excluded from global)", () => {
-    const pairs = getGlobalSyncPairs(["gemini", "codex", "opencode", "kiro", "kimi", "cursor"]);
-    // Cursor global is not supported (SQLite), so only 5 pairs
-    expect(pairs).toHaveLength(5);
+  it("returns aider pair", () => {
+    const pairs = getGlobalSyncPairs(["aider"]);
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0].source).toBe(PATHS.claudeMdGlobal);
+    expect(pairs[0].target).toBe(PATHS.aiderConventionsGlobal);
+  });
+
+  it("returns all six pairs (cursor excluded from global)", () => {
+    const pairs = getGlobalSyncPairs([
+      "gemini",
+      "codex",
+      "opencode",
+      "kiro",
+      "kimi",
+      "aider",
+      "cursor",
+    ]);
+    // Cursor global is not supported (SQLite), so only 6 pairs
+    expect(pairs).toHaveLength(6);
   });
 });
 
@@ -155,16 +170,17 @@ describe("getLocalSyncPairs", () => {
 
   it("builds all targets without duplicate AGENTS.md", () => {
     const pairs = getLocalSyncPairs(
-      ["gemini", "codex", "opencode", "kiro", "cursor", "kimi"],
+      ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "aider"],
       "/projects/myapp"
     );
-    // gemini=GEMINI.md, codex=AGENTS.md, opencode=deduplicated, kimi=deduplicated, kiro=.kiro/steering/, cursor=.cursor/rules/
-    expect(pairs).toHaveLength(4);
+    // gemini=GEMINI.md, codex=AGENTS.md, opencode=deduplicated, kimi=deduplicated, kiro=.kiro/steering/, cursor=.cursor/rules/, aider=.aider/CONVENTIONS.md
+    expect(pairs).toHaveLength(5);
     const targets = pairs.map((p) => p.target);
     expect(targets).toContain("/projects/myapp/GEMINI.md");
     expect(targets).toContain("/projects/myapp/AGENTS.md");
     expect(targets).toContain("/projects/myapp/.kiro/steering/claude-instructions.md");
     expect(targets).toContain("/projects/myapp/.cursor/rules/claude-instructions.mdc");
+    expect(targets).toContain("/projects/myapp/.aider/CONVENTIONS.md");
   });
 });
 
@@ -419,6 +435,57 @@ describe("syncInstructions", () => {
     expect(written).toContain("DEPTH_1");
     expect(written).toContain("DEPTH_20");
     expect(written).not.toContain("DEPTH_21");
+  });
+
+  it("syncs aider project conventions and updates .aider.conf.yml read list", async () => {
+    const writes = new Map<string, string>();
+    mockFs.existsSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === "/src/.claude/CLAUDE.md") return true;
+      if (path === "/src/.aider.conf.yml") return false;
+      return false;
+    });
+    mockFs.readFileSync.mockImplementation((p) => {
+      if (String(p) === "/src/.claude/CLAUDE.md") return "# Rules\nUse pnpm";
+      return "";
+    });
+    mockFs.writeFileSync.mockImplementation((p, data) => {
+      writes.set(String(p), String(data));
+    });
+    mockFs.mkdirSync.mockReturnValue(undefined as unknown as string);
+
+    const pairs = getLocalSyncPairs(["aider"], "/src");
+    await syncInstructions(pairs, { dryRun: false });
+
+    expect(writes.get("/src/.aider/CONVENTIONS.md")).toContain("Use pnpm");
+    expect(writes.get("/src/.aider.conf.yml")).toContain("read:");
+    expect(writes.get("/src/.aider.conf.yml")).toContain(".aider/CONVENTIONS.md");
+  });
+
+  it("does not duplicate aider read entry when already present", async () => {
+    const writes = new Map<string, string>();
+    mockFs.existsSync.mockImplementation((p) => {
+      const path = String(p);
+      return path === "/src/.claude/CLAUDE.md" || path === "/src/.aider.conf.yml";
+    });
+    mockFs.readFileSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === "/src/.claude/CLAUDE.md") return "# Rules\nUse pnpm";
+      if (path === "/src/.aider.conf.yml") return "read:\n  - .aider/CONVENTIONS.md\n";
+      return "";
+    });
+    mockFs.writeFileSync.mockImplementation((p, data) => {
+      writes.set(String(p), String(data));
+    });
+    mockFs.mkdirSync.mockReturnValue(undefined as unknown as string);
+
+    const pairs = getLocalSyncPairs(["aider"], "/src");
+    await syncInstructions(pairs, { dryRun: false });
+
+    const config = writes.get("/src/.aider.conf.yml");
+    if (config !== undefined) {
+      expect(config.match(/\.aider\/CONVENTIONS\.md/g)?.length ?? 0).toBe(1);
+    }
   });
 
   it("strips standalone @import lines when importMode=strip", async () => {

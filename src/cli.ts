@@ -50,7 +50,7 @@ program
   .description("Sync MCP settings from Claude Code to other CLIs")
   .option(
     "-t, --target <targets...>",
-    "sync targets (gemini, codex, opencode, kiro, cursor, kimi)",
+    "sync targets (gemini, codex, opencode, kiro, cursor, kimi, aider)",
     [
       "gemini",
       "codex",
@@ -58,6 +58,7 @@ program
       "kiro",
       "cursor",
       "kimi",
+      "aider",
     ]
   )
   .option("--dry-run", "preview mode, no files will be written", false)

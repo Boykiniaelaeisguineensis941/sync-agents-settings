@@ -11,7 +11,7 @@
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?logo=prettier)](https://prettier.io/)
 [![CI](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml/badge.svg)](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml)
 
-Sync MCP server configurations and instruction files (CLAUDE.md) from **Claude Code** to **Gemini CLI**, **Codex CLI**, **OpenCode**, **Kiro CLI**, **Cursor**, and **Kimi CLI**.
+Sync MCP server configurations and instruction files (CLAUDE.md) from **Claude Code** to **Gemini CLI**, **Codex CLI**, **OpenCode**, **Kiro CLI**, **Cursor**, **Kimi CLI**, and **Aider CLI**.
 
 **README translations:** [🇹🇼 繁體中文](docs/i18n/README.zh-tw.md) | [🇨🇳 简体中文](docs/i18n/README.zh-cn.md) | [🇯🇵 日本語](docs/i18n/README.ja.md) | [🇰🇷 한국어](docs/i18n/README.ko.md)
 **Support matrix:** [CLI compatibility matrix](docs/compatibility-matrix.md)
@@ -162,7 +162,7 @@ sync-agents validate --target codex opencode --skip-oauth
 # Reconcile selected targets only
 sync-agents reconcile --target gemini codex
 
-# Sync instruction files (CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules)
+# Sync instruction files (CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules / Aider conventions)
 sync-agents sync-instructions
 
 # Sync only global instructions
@@ -172,7 +172,7 @@ sync-agents sync-instructions --global
 sync-agents sync-instructions --local
 
 # Sync to specific targets
-sync-agents sync-instructions --target gemini codex kimi
+sync-agents sync-instructions --target gemini codex kimi aider
 
 # Auto-overwrite without prompts (for CI)
 sync-agents sync-instructions --on-conflict overwrite
@@ -246,6 +246,7 @@ Syncs CLAUDE.md instruction files to each target's native format:
 | Codex | `~/.codex/AGENTS.md` | `./AGENTS.md` | Plain copy (expand standalone `@import` lines) |
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` (shared with Codex) | Plain copy (expand standalone `@import` lines) |
 | Kimi | `~/.kimi/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode) | Plain copy (expand standalone `@import` lines) |
+| Aider | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | Plain copy + upsert `read` entry in `.aider.conf.yml` |
 | Kiro | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Add `inclusion: always` frontmatter |
 | Cursor | Not supported (SQLite) | `.cursor/rules/claude-instructions.mdc` | Add `alwaysApply: true` frontmatter |
 
@@ -256,6 +257,7 @@ Notes:
 - `@import` handling defaults to `inline` (expand). Use `--import-mode strip` to remove standalone import lines.
 - By default, standalone `@import` can only read files inside the current project root. Use `--allow-unsafe-imports` to opt out.
 - Inline import expansion has guardrails (`max depth: 20`, `max files: 200`) to avoid runaway recursion.
+- Aider sync also upserts `.aider.conf.yml` `read` so `CONVENTIONS.md` is loaded automatically (global/project follows the sync scope).
 - Kimi CLI currently loads `AGENTS.md` from the working directory. `~/.kimi/AGENTS.md` is synced as a reusable global template.
 
 When a target file already exists, you'll be prompted to choose: **overwrite**, **append** (keep existing + add CLAUDE.md below), or **skip**. Use `--on-conflict overwrite|append|skip` for non-interactive mode.
