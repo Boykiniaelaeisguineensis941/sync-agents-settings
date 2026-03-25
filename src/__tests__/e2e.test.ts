@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import TOML from "@iarna/toml";
 
@@ -24,6 +24,23 @@ function runCli(...args: string[]): string {
     },
     stdio: ["pipe", "pipe", "pipe"],
   });
+}
+
+function runCliWithStatus(...args: string[]): { status: number | null; stdout: string; stderr: string } {
+  const result = spawnSync("npx", ["tsx", join(process.cwd(), "src", "cli.ts"), ...args], {
+    encoding: "utf-8",
+    env: {
+      ...process.env,
+      HOME: FAKE_HOME,
+    },
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+
+  return {
+    status: result.status,
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+  };
 }
 
 beforeEach(() => {
@@ -174,5 +191,10 @@ describe("E2E: CLI commands", () => {
   it("diff shows differences", () => {
     const output = runCli("diff", "--target", "gemini");
     expect(output).toContain("Only in Claude");
+  });
+
+  it("validate --fix --dry-run exits successfully (smoke)", () => {
+    const result = runCliWithStatus("validate", "--fix", "--dry-run", "--target", "gemini");
+    expect(result.status).toBe(0);
   });
 });

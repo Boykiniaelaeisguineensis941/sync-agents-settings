@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { readClaudeMcpServers } from "../reader.js";
 import * as fs from "node:fs";
 import { PATHS } from "../paths.js";
