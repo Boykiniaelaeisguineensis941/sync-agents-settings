@@ -12,12 +12,13 @@ If no targets specified, sync to all targets.
 
 The user may also pass flags:
 - `--no-backup` — skip creating backup of target instruction files
+- `--import-mode inline|strip` — how to handle standalone `@import` lines (`inline` = expand, `strip` = remove line)
 
 ## Execution Flow
 
 1. Ask the user which scope to sync:
    - **Global** (`~/.claude/CLAUDE.md`) — syncs to agent-specific global instruction files
-   - **Local** (`./CLAUDE.md` in current directory) — syncs to project-level instruction files
+   - **Local** (`./.claude/CLAUDE.md` in current directory, fallback `./CLAUDE.md`) — syncs to project-level instruction files
    - **Both** (default) — syncs both global and local
 
 2. Parse targets from user arguments. Build the dry-run command:

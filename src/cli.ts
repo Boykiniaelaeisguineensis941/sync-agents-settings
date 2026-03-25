@@ -16,6 +16,7 @@ import {
   getLocalSyncPairs,
   getUnsupportedGlobalTargets,
   type InstructionsTarget,
+  type ImportMode,
 } from "./instructions.js";
 import type { ConflictAction } from "./prompt.js";
 
@@ -164,9 +165,14 @@ program
     "cursor",
   ])
   .option("--global", "sync global config (~/.claude/CLAUDE.md)", false)
-  .option("--local", "sync project-level CLAUDE.md in current directory", false)
+  .option(
+    "--local",
+    "sync project-level CLAUDE.md in current directory (prefers ./.claude/CLAUDE.md, falls back to ./CLAUDE.md)",
+    false
+  )
   .option("--dry-run", "preview mode, no files will be written", false)
   .option("--no-backup", "skip backup")
+  .option("--import-mode <mode>", "how to handle standalone @imports: inline or strip", "inline")
   .option(
     "--on-conflict <action>",
     "action when target exists: overwrite, append, skip (skips interactive prompt)"
@@ -178,6 +184,12 @@ program
     const dryRun = opts.dryRun as boolean;
     const skipBackup = !opts.backup;
     const onConflict = opts.onConflict as ConflictAction | undefined;
+    const importMode = opts.importMode as ImportMode;
+
+    if (importMode !== "inline" && importMode !== "strip") {
+      console.error(`Invalid --import-mode: ${importMode}. Use "inline" or "strip".`);
+      process.exit(1);
+    }
 
     // Default: sync both if neither flag is set
     const doGlobal = syncGlobal || (!syncGlobal && !syncLocal);
@@ -198,16 +210,16 @@ program
 
       const pairs = getGlobalSyncPairs(targets);
       backupTargets(pairs, skipBackup, dryRun);
-      const result = await syncInstructions(pairs, { dryRun, force: onConflict });
+      const result = await syncInstructions(pairs, { dryRun, force: onConflict, importMode });
       printInstructionsResult(result);
     }
 
     // Local sync
     if (doLocal) {
-      console.log("📋 Syncing local instructions (./CLAUDE.md)...\n");
+      console.log("📋 Syncing local instructions (./.claude/CLAUDE.md or ./CLAUDE.md)...\n");
       const pairs = getLocalSyncPairs(targets, process.cwd());
       backupTargets(pairs, skipBackup, dryRun);
-      const result = await syncInstructions(pairs, { dryRun, force: onConflict });
+      const result = await syncInstructions(pairs, { dryRun, force: onConflict, importMode });
       printInstructionsResult(result);
     }
 

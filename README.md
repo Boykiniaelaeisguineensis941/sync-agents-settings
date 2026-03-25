@@ -109,6 +109,9 @@ sync-agents sync-instructions --target gemini codex
 # Auto-overwrite without prompts (for CI)
 sync-agents sync-instructions --on-conflict overwrite
 
+# Keep legacy behavior: remove standalone @import lines instead of expanding
+sync-agents sync-instructions --import-mode strip
+
 # Preview instruction sync
 sync-agents sync-instructions --dry-run
 ```
@@ -153,23 +156,29 @@ Syncs CLAUDE.md instruction files to each target's native format:
 ```
                                           ┌─→ ~/.gemini/GEMINI.md             (plain copy)
                                           ├─→ ~/.codex/AGENTS.md              (plain copy)
-~/.claude/CLAUDE.md ─→ filter @imports ──┼─→ ~/.config/opencode/AGENTS.md    (plain copy)
+~/.claude/CLAUDE.md (+ ~/.claude/rules/*.md) ─→ expand @imports ──┼─→ ~/.config/opencode/AGENTS.md    (plain copy)
                                           ├─→ ~/.kiro/steering/claude-instructions.md  (+ inclusion: always)
                                           └─→ ⚠ Cursor global not supported  (SQLite)
 
                                           ┌─→ ./GEMINI.md                     (plain copy)
                                           ├─→ ./AGENTS.md                     (Codex + OpenCode share)
-./CLAUDE.md ──────────→ filter @imports ──┼─→ .kiro/steering/claude-instructions.md    (+ inclusion: always)
+./.claude/CLAUDE.md (fallback: ./CLAUDE.md) + ./.claude/rules/*.md ─→ expand @imports ──┼─→ .kiro/steering/claude-instructions.md    (+ inclusion: always)
                                           └─→ .cursor/rules/claude-instructions.mdc   (+ alwaysApply: true)
 ```
 
 | Target | Global | Local | Format Transform |
 |--------|--------|-------|------------------|
-| Gemini | `~/.gemini/GEMINI.md` | `./GEMINI.md` | Plain copy (filter `@import` lines) |
-| Codex | `~/.codex/AGENTS.md` | `./AGENTS.md` | Plain copy (filter `@import` lines) |
-| OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` (shared with Codex) | Plain copy (filter `@import` lines) |
+| Gemini | `~/.gemini/GEMINI.md` | `./GEMINI.md` | Plain copy (expand standalone `@import` lines) |
+| Codex | `~/.codex/AGENTS.md` | `./AGENTS.md` | Plain copy (expand standalone `@import` lines) |
+| OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` (shared with Codex) | Plain copy (expand standalone `@import` lines) |
 | Kiro | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Add `inclusion: always` frontmatter |
 | Cursor | Not supported (SQLite) | `.cursor/rules/claude-instructions.mdc` | Add `alwaysApply: true` frontmatter |
+
+Notes:
+- Local source resolution prefers `./.claude/CLAUDE.md`, then falls back to `./CLAUDE.md`.
+- Extra rules in `.claude/rules/**/*.md` are appended automatically (unless already included via `@import`).
+- If a rule file has frontmatter `paths`, it is included only when at least one project file matches.
+- `@import` handling defaults to `inline` (expand). Use `--import-mode strip` to remove standalone import lines.
 
 When a target file already exists, you'll be prompted to choose: **overwrite**, **append** (keep existing + add CLAUDE.md below), or **skip**. Use `--on-conflict overwrite|append|skip` for non-interactive mode.
 
@@ -354,7 +363,7 @@ Use `--no-backup` to skip. Target directories that don't exist (CLI not installe
 
 | Tool | Global Path | Project Path | Format |
 |------|------------|-------------|--------|
-| Claude Code | `~/.claude/CLAUDE.md` | `./CLAUDE.md` | Markdown |
+| Claude Code | `~/.claude/CLAUDE.md` | `./.claude/CLAUDE.md` (fallback `./CLAUDE.md`) | Markdown |
 | Gemini CLI | `~/.gemini/GEMINI.md` | `./GEMINI.md` | Markdown |
 | Codex CLI | `~/.codex/AGENTS.md` | `./AGENTS.md` | Markdown |
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` | Markdown |
@@ -404,4 +413,3 @@ claude --plugin-dir /path/to/sync-agents-settings
 ## License
 
 MIT
-

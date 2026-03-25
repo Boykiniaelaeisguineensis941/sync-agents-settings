@@ -105,6 +105,9 @@ sync-agents sync-instructions --target gemini codex
 # 自動覆蓋不詢問（適用於 CI）
 sync-agents sync-instructions --on-conflict overwrite
 
+# 保留舊行為：移除獨立行 @import，不展開內容
+sync-agents sync-instructions --import-mode strip
+
 # 預覽指令同步
 sync-agents sync-instructions --dry-run
 ```
@@ -138,13 +141,19 @@ sync-agents sync-instructions --dry-run
 
 | 目標 | 全域路徑 | 專案路徑 | 格式轉換 |
 |------|---------|---------|---------|
-| Gemini | `~/.gemini/GEMINI.md` | `./GEMINI.md` | 直接複製（過濾 `@import` 行） |
-| Codex | `~/.codex/AGENTS.md` | `./AGENTS.md` | 直接複製（過濾 `@import` 行） |
-| OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md`（與 Codex 共用） | 直接複製（過濾 `@import` 行） |
+| Gemini | `~/.gemini/GEMINI.md` | `./GEMINI.md` | 直接複製（展開獨立行 `@import`） |
+| Codex | `~/.codex/AGENTS.md` | `./AGENTS.md` | 直接複製（展開獨立行 `@import`） |
+| OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md`（與 Codex 共用） | 直接複製（展開獨立行 `@import`） |
 | Kiro | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | 加上 `inclusion: always` frontmatter |
 | Cursor | 不支援（SQLite） | `.cursor/rules/claude-instructions.mdc` | 加上 `alwaysApply: true` frontmatter |
 
 當目標檔案已存在時，會詢問你選擇：**覆蓋**、**附加**（保留原有內容 + 加上 CLAUDE.md）、或**跳過**。使用 `--on-conflict overwrite|append|skip` 可跳過互動式詢問。
+
+補充：
+- 專案來源會優先使用 `./.claude/CLAUDE.md`，不存在時 fallback `./CLAUDE.md`。
+- 會自動合併 `.claude/rules/**/*.md`（若已被 `@import` 引入則不重複）。
+- 若 rule frontmatter 含 `paths`，僅在至少一個專案檔案符合時才會套用。
+- `@import` 預設為 `inline`（展開內容），可用 `--import-mode strip` 改成只移除獨立行 `@import`。
 
 ## 安全機制
 
@@ -170,7 +179,7 @@ sync-agents sync-instructions --dry-run
 
 | 工具 | 全域路徑 | 專案路徑 | 格式 |
 |------|---------|---------|------|
-| Claude Code | `~/.claude/CLAUDE.md` | `./CLAUDE.md` | Markdown |
+| Claude Code | `~/.claude/CLAUDE.md` | `./.claude/CLAUDE.md`（fallback `./CLAUDE.md`） | Markdown |
 | Gemini CLI | `~/.gemini/GEMINI.md` | `./GEMINI.md` | Markdown |
 | Codex CLI | `~/.codex/AGENTS.md` | `./AGENTS.md` | Markdown |
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` | Markdown |

@@ -102,7 +102,15 @@ describe("getUnsupportedGlobalTargets", () => {
 });
 
 describe("getLocalSyncPairs", () => {
+  it("prefers ./.claude/CLAUDE.md when present", () => {
+    mockFs.existsSync.mockImplementation((p) => String(p) === "/projects/myapp/.claude/CLAUDE.md");
+    const pairs = getLocalSyncPairs(["gemini"], "/projects/myapp");
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0].source).toBe("/projects/myapp/.claude/CLAUDE.md");
+  });
+
   it("builds pairs from cwd", () => {
+    mockFs.existsSync.mockReturnValue(false);
     const pairs = getLocalSyncPairs(["gemini", "codex"], "/projects/myapp");
     expect(pairs).toHaveLength(2);
     expect(pairs[0].source).toBe("/projects/myapp/CLAUDE.md");
@@ -278,6 +286,167 @@ describe("syncInstructions", () => {
     expect(written).toContain("# Project");
     expect(written).toContain("pnpm build");
     expect(written).not.toContain("@README.md");
+  });
+
+  it("inlines standalone @import content", async () => {
+    let written = "";
+    mockFs.existsSync.mockImplementation((p) => {
+      const path = String(p);
+      return path === "/src/CLAUDE.md" || path === "/src/rules.md";
+    });
+    mockFs.readFileSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === "/src/CLAUDE.md") return "# Project\n@./rules.md\n## End";
+      if (path === "/src/rules.md") return "Use pnpm";
+      return "";
+    });
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      written = String(data);
+    });
+    mockFs.mkdirSync.mockReturnValue(undefined as unknown as string);
+
+    await syncInstructions(
+      [{ source: "/src/CLAUDE.md", target: "/dst/GEMINI.md", targetLabel: "Gemini" }],
+      { dryRun: false }
+    );
+
+    expect(written).toContain("# Project");
+    expect(written).toContain("Use pnpm");
+    expect(written).toContain("## End");
+    expect(written).not.toContain("@./rules.md");
+  });
+
+  it("strips standalone @import lines when importMode=strip", async () => {
+    let written = "";
+    mockFs.existsSync.mockImplementation((p) => {
+      const path = String(p);
+      return path === "/src/CLAUDE.md" || path === "/src/rules.md";
+    });
+    mockFs.readFileSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === "/src/CLAUDE.md") return "# Project\n@./rules.md\n## End";
+      if (path === "/src/rules.md") return "Use pnpm";
+      return "";
+    });
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      written = String(data);
+    });
+    mockFs.mkdirSync.mockReturnValue(undefined as unknown as string);
+
+    await syncInstructions(
+      [{ source: "/src/CLAUDE.md", target: "/dst/GEMINI.md", targetLabel: "Gemini" }],
+      { dryRun: false, importMode: "strip" }
+    );
+
+    expect(written).toContain("# Project");
+    expect(written).toContain("## End");
+    expect(written).not.toContain("@./rules.md");
+    expect(written).not.toContain("Use pnpm");
+  });
+
+  it("appends .claude/rules/*.md content for modern layout", async () => {
+    let written = "";
+    mockFs.existsSync.mockImplementation((p) => {
+      const path = String(p);
+      return (
+        path === "/src/.claude/CLAUDE.md" ||
+        path === "/src/.claude/rules" ||
+        path === "/src/.claude/rules/style.md"
+      );
+    });
+    mockFs.readFileSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === "/src/.claude/CLAUDE.md") return "# Base";
+      if (path === "/src/.claude/rules/style.md") return "Always use pnpm";
+      return "";
+    });
+    mockFs.readdirSync.mockImplementation((p) => {
+      if (String(p) === "/src/.claude/rules") {
+        return [{ name: "style.md", isDirectory: () => false, isFile: () => true }] as any;
+      }
+      return [] as any;
+    });
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      written = String(data);
+    });
+    mockFs.mkdirSync.mockReturnValue(undefined as unknown as string);
+
+    await syncInstructions(
+      [
+        {
+          source: "/src/.claude/CLAUDE.md",
+          target: "/dst/GEMINI.md",
+          targetLabel: "Gemini",
+        },
+      ],
+      { dryRun: false }
+    );
+
+    expect(written).toContain("# Base");
+    expect(written).toContain("Always use pnpm");
+    expect(written).toContain("Synced extra rule");
+  });
+
+  it("includes only rules whose frontmatter paths match project files", async () => {
+    let written = "";
+    mockFs.existsSync.mockImplementation((p) => {
+      const path = String(p);
+      return (
+        path === "/src/.claude/CLAUDE.md" ||
+        path === "/src/.claude/rules" ||
+        path === "/src/.claude/rules/backend.md" ||
+        path === "/src/.claude/rules/frontend.md" ||
+        path === "/src/src/api/server.ts"
+      );
+    });
+    mockFs.readFileSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === "/src/.claude/CLAUDE.md") return "# Base";
+      if (path === "/src/.claude/rules/backend.md") {
+        return ["---", 'paths: "src/api/**"', "---", "", "Backend rule"].join("\n");
+      }
+      if (path === "/src/.claude/rules/frontend.md") {
+        return ["---", 'paths: "src/ui/**"', "---", "", "Frontend rule"].join("\n");
+      }
+      return "";
+    });
+    mockFs.readdirSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === "/src/.claude/rules") {
+        return [
+          { name: "backend.md", isDirectory: () => false, isFile: () => true },
+          { name: "frontend.md", isDirectory: () => false, isFile: () => true },
+        ] as any;
+      }
+      if (path === "/src") {
+        return [{ name: "src", isDirectory: () => true, isFile: () => false }] as any;
+      }
+      if (path === "/src/src") {
+        return [{ name: "api", isDirectory: () => true, isFile: () => false }] as any;
+      }
+      if (path === "/src/src/api") {
+        return [{ name: "server.ts", isDirectory: () => false, isFile: () => true }] as any;
+      }
+      return [] as any;
+    });
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      written = String(data);
+    });
+    mockFs.mkdirSync.mockReturnValue(undefined as unknown as string);
+
+    await syncInstructions(
+      [
+        {
+          source: "/src/.claude/CLAUDE.md",
+          target: "/dst/GEMINI.md",
+          targetLabel: "Gemini",
+        },
+      ],
+      { dryRun: false }
+    );
+
+    expect(written).toContain("Backend rule");
+    expect(written).not.toContain("Frontend rule");
   });
 
   it("dry-run does not write files", async () => {

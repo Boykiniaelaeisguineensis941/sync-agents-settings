@@ -6,3 +6,4 @@ firebase-debug.log
 .claude/
 coverage/
 test-results.xml
+.remember/
