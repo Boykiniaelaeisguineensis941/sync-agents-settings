@@ -16,6 +16,7 @@ const mockFs = vi.mocked(fs);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockFs.realpathSync.mockImplementation((p) => String(p) as any);
 });
 
 describe("filterClaudeSpecificSyntax", () => {
@@ -327,6 +328,97 @@ describe("syncInstructions", () => {
     expect(written).toContain("Use pnpm");
     expect(written).toContain("## End");
     expect(written).not.toContain("@./rules.md");
+  });
+
+  it("blocks absolute-path imports outside project by default", async () => {
+    let written = "";
+    mockFs.existsSync.mockImplementation((p) => {
+      const path = String(p);
+      return path === "/src/.claude/CLAUDE.md" || path === "/etc/passwd";
+    });
+    mockFs.readFileSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === "/src/.claude/CLAUDE.md") return "# Project\n@/etc/passwd\n## End";
+      if (path === "/etc/passwd") return "root:x:0:0:root:/root:/bin/bash";
+      return "";
+    });
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      written = String(data);
+    });
+    mockFs.mkdirSync.mockReturnValue(undefined as unknown as string);
+
+    await syncInstructions(
+      [
+        {
+          source: "/src/.claude/CLAUDE.md",
+          target: "/dst/GEMINI.md",
+          targetLabel: "Gemini",
+        },
+      ],
+      { dryRun: false }
+    );
+
+    expect(written).toContain("# Project");
+    expect(written).toContain("## End");
+    expect(written).not.toContain("root:x:0:0");
+  });
+
+  it("allows unsafe imports when allowUnsafeImports=true", async () => {
+    let written = "";
+    mockFs.existsSync.mockImplementation((p) => {
+      const path = String(p);
+      return path === "/src/.claude/CLAUDE.md" || path === "/etc/passwd";
+    });
+    mockFs.readFileSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === "/src/.claude/CLAUDE.md") return "# Project\n@/etc/passwd\n## End";
+      if (path === "/etc/passwd") return "root:x:0:0:root:/root:/bin/bash";
+      return "";
+    });
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      written = String(data);
+    });
+    mockFs.mkdirSync.mockReturnValue(undefined as unknown as string);
+
+    await syncInstructions(
+      [
+        {
+          source: "/src/.claude/CLAUDE.md",
+          target: "/dst/GEMINI.md",
+          targetLabel: "Gemini",
+        },
+      ],
+      { dryRun: false, allowUnsafeImports: true }
+    );
+
+    expect(written).toContain("root:x:0:0");
+  });
+
+  it("enforces max import depth", async () => {
+    let written = "";
+    const source = "/src/.claude/CLAUDE.md";
+    const files = new Map<string, string>();
+    files.set(source, "# Root\n@./d1.md\n## End");
+    for (let i = 1; i <= 25; i += 1) {
+      const next = i < 25 ? `\n@./d${i + 1}.md` : "";
+      files.set(`/src/.claude/d${i}.md`, `DEPTH_${i}${next}`);
+    }
+
+    mockFs.existsSync.mockImplementation((p) => files.has(String(p)));
+    mockFs.readFileSync.mockImplementation((p) => files.get(String(p)) ?? "");
+    mockFs.writeFileSync.mockImplementation((_p, data) => {
+      written = String(data);
+    });
+    mockFs.mkdirSync.mockReturnValue(undefined as unknown as string);
+
+    await syncInstructions(
+      [{ source, target: "/dst/GEMINI.md", targetLabel: "Gemini" }],
+      { dryRun: false }
+    );
+
+    expect(written).toContain("DEPTH_1");
+    expect(written).toContain("DEPTH_20");
+    expect(written).not.toContain("DEPTH_21");
   });
 
   it("strips standalone @import lines when importMode=strip", async () => {

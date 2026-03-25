@@ -698,6 +698,11 @@ program
   .option("--dry-run", "preview mode, no files will be written", false)
   .option("--no-backup", "skip backup")
   .option("--import-mode <mode>", "how to handle standalone @imports: inline or strip", "inline")
+  .option(
+    "--allow-unsafe-imports",
+    "allow standalone @imports to read files outside current project root",
+    false
+  )
   .option("--report <format>", "output format: text or json", "text")
   .option(
     "--on-conflict <action>",
@@ -711,6 +716,7 @@ program
     const skipBackup = !opts.backup;
     const onConflict = opts.onConflict as ConflictAction | undefined;
     const importMode = opts.importMode as ImportMode;
+    const allowUnsafeImports = opts.allowUnsafeImports as boolean;
     const reportFormat = opts.report as string;
     const jsonReport = reportFormat === "json";
     const forceAction = onConflict ?? (jsonReport ? "overwrite" : undefined);
@@ -772,7 +778,12 @@ program
       if (!jsonReport) {
         backupTargets(pairs, skipBackup, dryRun);
       }
-      globalResult = await syncInstructions(pairs, { dryRun, force: forceAction, importMode });
+      globalResult = await syncInstructions(pairs, {
+        dryRun,
+        force: forceAction,
+        importMode,
+        allowUnsafeImports,
+      });
       if (!jsonReport) {
         printInstructionsResult(globalResult);
       }
@@ -787,7 +798,12 @@ program
       if (!jsonReport) {
         backupTargets(pairs, skipBackup, dryRun);
       }
-      localResult = await syncInstructions(pairs, { dryRun, force: forceAction, importMode });
+      localResult = await syncInstructions(pairs, {
+        dryRun,
+        force: forceAction,
+        importMode,
+        allowUnsafeImports,
+      });
       if (!jsonReport) {
         printInstructionsResult(localResult);
       }

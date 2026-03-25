@@ -179,6 +179,9 @@ sync-agents sync-instructions --on-conflict overwrite
 # Keep legacy behavior: remove standalone @import lines instead of expanding
 sync-agents sync-instructions --import-mode strip
 
+# Allow standalone @import to read files outside current project root (use with care)
+sync-agents sync-instructions --allow-unsafe-imports
+
 # Preview instruction sync
 sync-agents sync-instructions --dry-run
 ```
@@ -250,6 +253,8 @@ Notes:
 - Extra rules in `.claude/rules/**/*.md` are appended automatically (unless already included via `@import`).
 - If a rule file has frontmatter `paths`, it is included only when at least one project file matches.
 - `@import` handling defaults to `inline` (expand). Use `--import-mode strip` to remove standalone import lines.
+- By default, standalone `@import` can only read files inside the current project root. Use `--allow-unsafe-imports` to opt out.
+- Inline import expansion has guardrails (`max depth: 20`, `max files: 200`) to avoid runaway recursion.
 - Kimi CLI currently loads `AGENTS.md` from the working directory. `~/.kimi/AGENTS.md` is synced as a reusable global template.
 
 When a target file already exists, you'll be prompted to choose: **overwrite**, **append** (keep existing + add CLAUDE.md below), or **skip**. Use `--on-conflict overwrite|append|skip` for non-interactive mode.

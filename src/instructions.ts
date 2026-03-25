@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, realpathSync } from "node:fs";
 import { basename, dirname, resolve, relative } from "node:path";
 import { homedir } from "node:os";
 import { PATHS } from "./paths.js";
@@ -17,6 +17,8 @@ interface SyncPair {
 
 const STANDALONE_IMPORT_LINE = /^@(\S+)\s*$/;
 const FRONTMATTER_BLOCK = /^---\n([\s\S]*?)\n---\n?/;
+const MAX_IMPORT_DEPTH = 20;
+const MAX_IMPORT_FILES = 200;
 
 /**
  * Strip existing YAML frontmatter (--- ... ---) from content.
@@ -179,21 +181,56 @@ export function filterClaudeSpecificSyntax(content: string): string {
     .join("\n");
 }
 
-function resolveImportPath(importPath: string, currentFile: string): string {
+function toRealPath(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+function isPathInside(baseDir: string, candidatePath: string): boolean {
+  const base = toRealPath(baseDir);
+  const candidate = toRealPath(candidatePath);
+  return candidate === base || candidate.startsWith(base + "/");
+}
+
+function resolveImportPath(
+  importPath: string,
+  currentFile: string,
+  projectRoot: string,
+  allowUnsafeImports: boolean
+): string | null {
+  let resolved: string;
   if (importPath.startsWith("~/")) {
-    return resolve(homedir(), importPath.slice(2));
+    resolved = resolve(homedir(), importPath.slice(2));
+  } else if (importPath.startsWith("/")) {
+    resolved = resolve(importPath);
+  } else {
+    resolved = resolve(dirname(currentFile), importPath);
   }
-  if (importPath.startsWith("/")) {
-    return resolve(importPath);
+
+  if (!allowUnsafeImports && !isPathInside(projectRoot, resolved)) {
+    return null;
   }
-  return resolve(dirname(currentFile), importPath);
+
+  return resolved;
 }
 
 function expandStandaloneImports(
   filePath: string,
   ancestry: Set<string>,
-  importedFiles: Set<string>
+  importedFiles: Set<string>,
+  options: {
+    projectRoot: string;
+    allowUnsafeImports: boolean;
+    depth: number;
+  }
 ): string {
+  if (options.depth > MAX_IMPORT_DEPTH || importedFiles.size > MAX_IMPORT_FILES) {
+    return "";
+  }
+
   const raw = readFileSync(filePath, "utf-8");
   const out: string[] = [];
 
@@ -205,15 +242,28 @@ function expandStandaloneImports(
       continue;
     }
 
-    const importPath = resolveImportPath(match[1], filePath);
-    if (!existsSync(importPath) || ancestry.has(importPath)) {
+    const importPath = resolveImportPath(
+      match[1],
+      filePath,
+      options.projectRoot,
+      options.allowUnsafeImports
+    );
+    if (!importPath || !existsSync(importPath)) {
       continue;
     }
 
-    importedFiles.add(importPath);
+    const canonicalImportPath = toRealPath(importPath);
+    if (ancestry.has(canonicalImportPath)) {
+      continue;
+    }
+
+    importedFiles.add(canonicalImportPath);
     const nextAncestry = new Set(ancestry);
-    nextAncestry.add(importPath);
-    const imported = expandStandaloneImports(importPath, nextAncestry, importedFiles).trim();
+    nextAncestry.add(canonicalImportPath);
+    const imported = expandStandaloneImports(importPath, nextAncestry, importedFiles, {
+      ...options,
+      depth: options.depth + 1,
+    }).trim();
     if (imported) {
       out.push(imported);
     }
@@ -379,7 +429,11 @@ function listProjectFilesRecursively(rootPath: string): string[] {
   return results;
 }
 
-function loadSourceContentWithRules(sourcePath: string, importMode: ImportMode): string | null {
+function loadSourceContentWithRules(
+  sourcePath: string,
+  importMode: ImportMode,
+  allowUnsafeImports: boolean
+): string | null {
   const parts: string[] = [];
   const importedFiles = new Set<string>();
   const projectRoot = getProjectRootFromSource(sourcePath);
@@ -389,7 +443,11 @@ function loadSourceContentWithRules(sourcePath: string, importMode: ImportMode):
   if (existsSync(sourcePath)) {
     const sourceBody =
       importMode === "inline"
-        ? expandStandaloneImports(sourcePath, new Set([sourcePath]), importedFiles).trim()
+        ? expandStandaloneImports(sourcePath, new Set([toRealPath(sourcePath)]), importedFiles, {
+            projectRoot,
+            allowUnsafeImports,
+            depth: 0,
+          }).trim()
         : readFileSync(sourcePath, "utf-8").trim();
     if (sourceBody) {
       parts.push(sourceBody);
@@ -405,7 +463,11 @@ function loadSourceContentWithRules(sourcePath: string, importMode: ImportMode):
     for (const ruleFile of ruleFiles) {
       const ruleBody =
         importMode === "inline"
-          ? expandStandaloneImports(ruleFile, new Set([ruleFile]), importedFiles).trim()
+          ? expandStandaloneImports(ruleFile, new Set([toRealPath(ruleFile)]), importedFiles, {
+              projectRoot,
+              allowUnsafeImports,
+              depth: 0,
+            }).trim()
           : readFileSync(ruleFile, "utf-8").trim();
       if (!ruleBody) continue;
       const pathPatterns = parseFrontmatterPaths(ruleBody);
@@ -445,16 +507,21 @@ export async function syncInstructions(
     dryRun: boolean;
     force?: ConflictAction;
     importMode?: ImportMode;
+    allowUnsafeImports?: boolean;
   }
 ): Promise<SyncInstructionsResult> {
   const result: SyncInstructionsResult = { synced: [], skipped: [], appended: [] };
   const importMode = options.importMode ?? "inline";
+  const allowUnsafeImports = options.allowUnsafeImports ?? false;
   // Cache filtered source content to avoid re-reading the same file per target
   const sourceCache = new Map<string, string | null>();
 
   for (const pair of pairs) {
     if (!sourceCache.has(pair.source)) {
-      sourceCache.set(pair.source, loadSourceContentWithRules(pair.source, importMode));
+      sourceCache.set(
+        pair.source,
+        loadSourceContentWithRules(pair.source, importMode, allowUnsafeImports)
+      );
     }
 
     const filtered = sourceCache.get(pair.source);

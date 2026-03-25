@@ -114,6 +114,9 @@ sync-agents sync-instructions --on-conflict overwrite
 # 保留旧行为：移除独立行 @import，不展开内容
 sync-agents sync-instructions --import-mode strip
 
+# 允许独立行 @import 读取当前项目根目录外文件（请谨慎使用）
+sync-agents sync-instructions --allow-unsafe-imports
+
 # 预览指令同步
 sync-agents sync-instructions --dry-run
 ```
@@ -163,6 +166,8 @@ sync-agents sync-instructions --dry-run
 - 会自动合并 `.claude/rules/**/*.md`（若已被 `@import` 引入则不重复）。
 - 若 rule frontmatter 含 `paths`，仅在至少一个项目文件匹配时才会套用。
 - `@import` 默认是 `inline`（展开内容），可用 `--import-mode strip` 改为只移除独立行 `@import`。
+- 默认只允许独立行 `@import` 读取当前项目根目录内文件；如需放宽可加 `--allow-unsafe-imports`。
+- 内联展开有防护上限（最大深度 20、最大文件数 200），避免递归展开失控。
 - Kimi CLI 当前只会从工作目录加载 `AGENTS.md`；`~/.kimi/AGENTS.md` 会作为可复用的全局模板同步。
 
 ## 安全机制
