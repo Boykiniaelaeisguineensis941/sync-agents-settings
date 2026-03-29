@@ -42,7 +42,7 @@
 - Keep commits scoped and atomic (code + tests + docs for that change).
 - PRs should include:
   - what changed and why
-  - affected commands/targets (e.g., `gemini`, `codex`, `kimi`)
+  - affected commands/targets (e.g., `gemini`, `codex`, `kimi`, `qwen`, `amp`, `cline`, `windsurf`)
   - verification steps and command outputs
   - linked issue (if applicable)
 

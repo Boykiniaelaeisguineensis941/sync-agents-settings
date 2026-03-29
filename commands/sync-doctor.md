@@ -8,13 +8,17 @@ Check whether target MCP configs are in sync with Claude Code, without writing a
 ## Arguments
 
 The user may pass target names: `/sync-doctor gemini codex`
-If no targets specified, check all targets (gemini, codex, opencode, kiro, cursor, kimi, vibe).
+If no targets specified, check all targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline, windsurf).
 
 Optional flags:
 - `--skip-oauth` — ignore OAuth-only servers from Claude source
 - `--codex-home <path>` — check project-level Codex config (e.g. `./.codex`)
 - `--kimi-home <path>` — check project-level Kimi config (e.g. `./.kimi`)
 - `--vibe-home <path>` — check project-level Vibe config (e.g. `./.vibe`)
+- `--qwen-home <path>` — check project-level Qwen Code config
+- `--amp-home <path>` — check project-level Amp config
+- `--cline-home <path>` — check project-level Cline CLI config
+- `--windsurf-home <path>` — check project-level Windsurf config
 - `--fix` — if drift exists, auto-run reconcile to add missing servers
 - `--dry-run` — with `--fix`, preview only
 - `--no-backup` — with `--fix`, skip backup before writing
@@ -25,7 +29,7 @@ Optional flags:
 1. Parse targets and flags from user arguments.
 2. Run:
    `npx sync-agents-settings doctor --target <targets>`
-   Add `--skip-oauth` / `--codex-home` / `--kimi-home` / `--vibe-home` when specified.
+   Add `--skip-oauth` / `--codex-home` / `--kimi-home` / `--vibe-home` / `--qwen-home` / `--amp-home` / `--cline-home` / `--windsurf-home` when specified.
 3. Present results per target:
    - `No drift` when fully in sync
    - `Missing in <target>` when Claude has servers not present in target

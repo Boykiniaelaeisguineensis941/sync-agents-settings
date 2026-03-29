@@ -7,14 +7,14 @@
 [![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2)](https://modelcontextprotocol.io/)
 [![CI](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml/badge.svg)](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml)
 
-將 **Claude Code** 的 MCP server 設定和指令檔（CLAUDE.md）同步到 **Gemini CLI**、**Codex CLI**、**OpenCode**、**Kiro CLI**、**Cursor**、**Kimi CLI**、**Vibe CLI**（Mistral）和 **Aider CLI**。
+將 **Claude Code** 的 MCP server 設定和指令檔（CLAUDE.md）同步到 **Gemini CLI**、**Codex CLI**、**OpenCode**、**Kiro CLI**、**Cursor**、**Kimi CLI**、**Vibe CLI**（Mistral）、**Qwen Code**、**Amp**（Sourcegraph）、**Cline CLI**、**Windsurf** 和 **Aider CLI**。
 
 **其他語言：** [🇺🇸 English](../../README.md) | [🇨🇳 简体中文](README.zh-cn.md) | [🇯🇵 日本語](README.ja.md) | [🇰🇷 한국어](README.ko.md)
 **支援矩陣：** [CLI 相容性矩陣](../compatibility-matrix.md)
 
 ## 為什麼需要這個工具
 
-如果你主要用 Claude Code 開發，但也會切換其他 AI agent（Gemini CLI、Codex CLI、OpenCode、Kiro、Cursor、Kimi CLI、Vibe CLI、Aider CLI）來善用各家的免費額度或不同模型，你一定知道這個痛點 — 每個工具的 MCP 設定格式都不一樣，一個一個設定實在太累。指令檔也是一樣 — CLAUDE.md、GEMINI.md、AGENTS.md、CONVENTIONS.md 都需要同樣的內容，但格式各不相同。
+如果你主要用 Claude Code 開發，但也會切換其他 AI agent（Gemini CLI、Codex CLI、OpenCode、Kiro、Cursor、Kimi CLI、Vibe CLI、Qwen Code、Amp、Cline CLI、Windsurf、Aider CLI）來善用各家的免費額度或不同模型，你一定知道這個痛點 — 每個工具的 MCP 設定格式都不一樣，一個一個設定實在太累。指令檔也是一樣 — CLAUDE.md、GEMINI.md、AGENTS.md、CONVENTIONS.md 都需要同樣的內容，但格式各不相同。
 
 這個工具讓你只在 Claude Code 設定一次 MCP servers 和撰寫指令，一行指令同步到所有目標。
 
@@ -84,6 +84,10 @@ sync-agents sync --target kiro
 sync-agents sync --target cursor
 sync-agents sync --target kimi
 sync-agents sync --target vibe
+sync-agents sync --target qwen
+sync-agents sync --target amp
+sync-agents sync --target cline
+sync-agents sync --target windsurf
 
 # 同步到 Codex 專案層級設定
 sync-agents sync --target codex --codex-home ./my-project/.codex
@@ -103,7 +107,7 @@ sync-agents sync --no-backup
 # 詳細輸出
 sync-agents sync -v
 
-# 同步指令檔（CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules / Aider conventions）
+# 同步指令檔（CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules / Amp AGENTS.md / Qwen AGENTS.md / Aider conventions）
 sync-agents sync-instructions
 
 # 只同步全域指令
@@ -113,7 +117,7 @@ sync-agents sync-instructions --global
 sync-agents sync-instructions --local
 
 # 同步到特定目標
-sync-agents sync-instructions --target gemini codex kimi vibe aider
+sync-agents sync-instructions --target gemini codex kimi vibe qwen amp aider
 
 # 自動覆蓋不詢問（適用於 CI）
 sync-agents sync-instructions --on-conflict overwrite
@@ -141,7 +145,11 @@ sync-agents sync-instructions --dry-run
                                                  ├─→ Kiro Writer     ─→ ~/.kiro/settings/mcp.json
                                                  ├─→ Cursor Writer   ─→ ~/.cursor/mcp.json
                                                  ├─→ Kimi Writer     ─→ ~/.kimi/mcp.json
-                                                 └─→ Vibe Writer     ─→ ~/.vibe/config.toml
+                                                 ├─→ Vibe Writer     ─→ ~/.vibe/config.toml
+                                                 ├─→ Qwen Writer     ─→ ~/.qwen/settings.json
+                                                 ├─→ Amp Writer      ─→ ~/.config/amp/settings.json
+                                                 ├─→ Cline Writer    ─→ ~/.cline/data/settings/cline_mcp_settings.json
+                                                 └─→ Windsurf Writer ─→ ~/.codeium/windsurf/mcp_config.json
 ```
 
 | 階段 | 說明 |
@@ -154,6 +162,10 @@ sync-agents sync-instructions --dry-run
 | **Cursor Writer** | 與 Claude 相同格式，`${VAR:-default}` → 展開 |
 | **Kimi Writer** | 與 Claude 相同格式，`${VAR:-default}` → 展開 |
 | **Vibe Writer** | JSON → TOML `[[mcp_servers]]`，需要 transport 欄位，`${VAR:-default}` → 展開 |
+| **Qwen Writer** | JSON → JSON，`type: "http"` → `httpUrl`，`${VAR}` → `$VAR`（與 Gemini 相同模式） |
+| **Amp Writer** | JSON → JSON，使用 `"amp.mcpServers"` 點號鍵，`${VAR}` 保留 |
+| **Cline Writer** | 與 Claude 相同格式（Claude format） |
+| **Windsurf Writer** | JSON → JSON，`url` → `serverUrl`，`${VAR}` → `${env:VAR}` |
 
 ### 指令檔同步（`sync-instructions`）
 
@@ -166,6 +178,8 @@ sync-agents sync-instructions --dry-run
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md`（與 Codex 共用） | 直接複製（展開獨立行 `@import`） |
 | Kimi | `~/.kimi/AGENTS.md` | `./AGENTS.md`（與 Codex / OpenCode / Vibe 共用） | 直接複製（展開獨立行 `@import`） |
 | Vibe | `~/.vibe/AGENTS.md` | `./AGENTS.md`（與 Codex / OpenCode / Kimi 共用） | 直接複製（展開獨立行 `@import`） |
+| Qwen | `~/.qwen/AGENTS.md` | `./AGENTS.md`（與 Codex / OpenCode / Kimi / Vibe 共用） | 直接複製（展開獨立行 `@import`） |
+| Amp | `~/.config/amp/AGENTS.md` | `./AGENTS.md`（與 Codex / OpenCode / Kimi / Vibe / Qwen 共用） | 直接複製（展開獨立行 `@import`） |
 | Aider | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | 直接複製 + 自動更新 `.aider.conf.yml` `read` |
 | Kiro | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | 加上 `inclusion: always` frontmatter |
 | Cursor | 不支援（SQLite） | `.cursor/rules/claude-instructions.mdc` | 加上 `alwaysApply: true` frontmatter |
@@ -201,10 +215,14 @@ sync-agents sync-instructions --dry-run
 | OpenCode（全域） | `~/.config/opencode/opencode.json` | JSON |
 | Kiro CLI（全域） | `~/.kiro/settings/mcp.json` | JSON |
 | Cursor（全域） | `~/.cursor/mcp.json` | JSON |
-| Kimi CLI（專案） | `.kimi/mcp.json`（用 `--kimi-home ./.kimi`） | JSON |
 | Kimi CLI（全域） | `~/.kimi/mcp.json` | JSON |
+| Kimi CLI（專案） | `.kimi/mcp.json`（用 `--kimi-home ./.kimi`） | JSON |
 | Vibe CLI（全域） | `~/.vibe/config.toml` | TOML |
 | Vibe CLI（專案） | `.vibe/config.toml`（用 `--vibe-home ./.vibe`） | TOML |
+| Qwen Code（全域） | `~/.qwen/settings.json` | JSON |
+| Amp（全域） | `~/.config/amp/settings.json` | JSON |
+| Cline CLI（全域） | `~/.cline/data/settings/cline_mcp_settings.json` | JSON |
+| Windsurf（全域） | `~/.codeium/windsurf/mcp_config.json` | JSON |
 
 ### 指令檔路徑
 
@@ -216,9 +234,13 @@ sync-agents sync-instructions --dry-run
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` | Markdown |
 | Kimi CLI | `~/.kimi/AGENTS.md` | `./AGENTS.md` | Markdown |
 | Vibe CLI | `~/.vibe/AGENTS.md` | `./AGENTS.md` | Markdown |
+| Qwen Code | `~/.qwen/AGENTS.md` | `./AGENTS.md` | Markdown |
+| Amp | `~/.config/amp/AGENTS.md` | `./AGENTS.md` | Markdown |
 | Aider CLI | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | Markdown |
 | Kiro CLI | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Markdown + frontmatter |
 | Cursor | 不支援（SQLite） | `.cursor/rules/claude-instructions.mdc` | MDC（Markdown + frontmatter） |
+| Cline CLI | 不支援指令同步 | 不支援指令同步 | — |
+| Windsurf | 不支援指令同步 | 不支援指令同步 | — |
 
 ## Claude Code Plugin
 

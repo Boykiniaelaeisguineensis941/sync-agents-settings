@@ -14,6 +14,10 @@ This matrix tracks what `sync-agents-settings` supports today across rule files 
 | Aider CLI | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | Yes | Yes | Supported |
 | Kiro CLI | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Yes | Yes | Supported |
 | Cursor | N/A (SQLite-managed global rules) | `.cursor/rules/claude-instructions.mdc` | No | Yes | Project-only |
+| Qwen Code | `~/.qwen/AGENTS.md` | `./AGENTS.md` | Yes | Yes | Supported |
+| Amp | `~/.config/amp/AGENTS.md` | `./AGENTS.md` | Yes | Yes | Supported |
+| Cline CLI | N/A | N/A | No | No | Not supported (uses .clinerules) |
+| Windsurf | N/A | N/A | No | No | Not supported (uses own rules format) |
 
 Notes:
 - Local source resolution prefers `./.claude/CLAUDE.md`, then falls back to `./CLAUDE.md`.
@@ -32,6 +36,10 @@ Notes:
 | Aider CLI | N/A | N/A | No | No | Planned (experimental backlog) |
 | Kiro CLI | `~/.kiro/settings/mcp.json` | `.kiro/settings/mcp.json` | Yes | Yes | Supported |
 | Cursor | `~/.cursor/mcp.json` | `.cursor/mcp.json` | Yes | Yes | Supported |
+| Qwen Code | `~/.qwen/settings.json` | `.qwen/settings.json` | Yes | Yes | Supported |
+| Amp | `~/.config/amp/settings.json` | `.config/amp/settings.json` | Yes | Yes | Supported |
+| Cline CLI | `~/.cline/data/settings/cline_mcp_settings.json` | `.cline/data/settings/cline_mcp_settings.json` | Yes | Yes | Supported |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` | `.codeium/windsurf/mcp_config.json` | Yes | Yes | Supported |
 
 ## Validation Checklist
 

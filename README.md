@@ -11,14 +11,14 @@
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?logo=prettier)](https://prettier.io/)
 [![CI](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml/badge.svg)](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml)
 
-Sync MCP server configurations and instruction files (CLAUDE.md) from **Claude Code** to **Gemini CLI**, **Codex CLI**, **OpenCode**, **Kiro CLI**, **Cursor**, **Kimi CLI**, **Vibe CLI** (Mistral), and **Aider CLI**.
+Sync MCP server configurations and instruction files (CLAUDE.md) from **Claude Code** to **Gemini CLI**, **Codex CLI**, **OpenCode**, **Kiro CLI**, **Cursor**, **Kimi CLI**, **Vibe CLI** (Mistral), **Qwen Code**, **Amp** (Sourcegraph), **Cline CLI**, **Windsurf**, and **Aider CLI**.
 
 **README translations:** [🇹🇼 繁體中文](docs/i18n/README.zh-tw.md) | [🇨🇳 简体中文](docs/i18n/README.zh-cn.md) | [🇯🇵 日本語](docs/i18n/README.ja.md) | [🇰🇷 한국어](docs/i18n/README.ko.md)
 **Support matrix:** [CLI compatibility matrix](docs/compatibility-matrix.md)
 
 ## Why
 
-If you use Claude Code as your primary AI coding agent but also switch between other agents (Gemini CLI, Codex CLI, OpenCode, Kiro, Cursor, Kimi CLI, Vibe CLI) to take advantage of their free tiers or different models, you know the pain — every tool has its own MCP config format, and setting them up one by one is tedious. Same goes for instruction files — CLAUDE.md, GEMINI.md, AGENTS.md all need the same content but in different formats.
+If you use Claude Code as your primary AI coding agent but also switch between other agents (Gemini CLI, Codex CLI, OpenCode, Kiro, Cursor, Kimi CLI, Vibe CLI, Qwen Code, Amp, Cline CLI, Windsurf) to take advantage of their free tiers or different models, you know the pain — every tool has its own MCP config format, and setting them up one by one is tedious. Same goes for instruction files — CLAUDE.md, GEMINI.md, AGENTS.md all need the same content but in different formats.
 
 This tool lets you configure MCP servers and write instructions once in Claude Code, then sync everywhere with a single command.
 
@@ -88,12 +88,22 @@ sync-agents sync --target kiro
 sync-agents sync --target cursor
 sync-agents sync --target kimi
 sync-agents sync --target vibe
+sync-agents sync --target qwen
+sync-agents sync --target amp
+sync-agents sync --target cline
+sync-agents sync --target windsurf
 
 # Sync to Codex project-level config
 sync-agents sync --target codex --codex-home ./my-project/.codex
 
 # Sync to Kimi project-level config
 sync-agents sync --target kimi --kimi-home ./my-project/.kimi
+
+# Sync to custom home directories
+sync-agents sync --target qwen --qwen-home ./my-project/.qwen
+sync-agents sync --target amp --amp-home ./my-project/.amp
+sync-agents sync --target cline --cline-home ./my-project/.cline
+sync-agents sync --target windsurf --windsurf-home ./my-project/.windsurf
 
 # Compare differences
 sync-agents diff
@@ -167,6 +177,7 @@ sync-agents validate --target codex opencode --skip-oauth
 sync-agents reconcile --target gemini codex
 
 # Sync instruction files (CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules / Aider conventions)
+# Targets: gemini, codex, opencode, kimi, vibe, kiro, cursor, aider, qwen, amp
 sync-agents sync-instructions
 
 # Sync only global instructions
@@ -176,7 +187,7 @@ sync-agents sync-instructions --global
 sync-agents sync-instructions --local
 
 # Sync to specific targets
-sync-agents sync-instructions --target gemini codex kimi vibe aider
+sync-agents sync-instructions --target gemini codex kimi vibe aider qwen amp
 
 # Auto-overwrite without prompts (for CI)
 sync-agents sync-instructions --on-conflict overwrite
@@ -206,15 +217,17 @@ pnpm test            # Run tests
 **Claude Code is the single source of truth** for MCP settings, synced to all supported targets.
 
 ```
-                                                 ┌─→ Gemini Writer   ─→ ~/.gemini/settings.json
-                                                 ├─→ Codex Writer    ─→ ~/.codex/config.toml
-~/.claude.json ─────┐                            │
-                     ├─→ Reader ─→ UnifiedMcpServer[] ─┼─→ OpenCode Writer ─→ ~/.config/opencode/opencode.json
-~/.claude/plugins/ ──┘                            │
-                                                 ├─→ Kiro Writer     ─→ ~/.kiro/settings/mcp.json
-                                                 ├─→ Cursor Writer   ─→ ~/.cursor/mcp.json
-                                                 ├─→ Kimi Writer     ─→ ~/.kimi/mcp.json
-                                                 └─→ Vibe Writer     ─→ ~/.vibe/config.toml
+                                                 ┌─→ Gemini Writer    ─→ ~/.gemini/settings.json
+                                                 ├─→ Codex Writer     ─→ ~/.codex/config.toml
+~/.claude.json ─────┐                            ├─→ OpenCode Writer  ─→ ~/.config/opencode/opencode.json
+                     ├─→ Reader ─→ UnifiedMcpServer[] ─┼─→ Kiro Writer      ─→ ~/.kiro/settings/mcp.json
+~/.claude/plugins/ ──┘                            ├─→ Cursor Writer    ─→ ~/.cursor/mcp.json
+                                                 ├─→ Kimi Writer      ─→ ~/.kimi/mcp.json
+                                                 ├─→ Vibe Writer      ─→ ~/.vibe/config.toml
+                                                 ├─→ Qwen Writer      ─→ ~/.qwen/settings.json
+                                                 ├─→ Amp Writer       ─→ ~/.config/amp/settings.json
+                                                 ├─→ Cline Writer     ─→ ~/.cline/data/settings/cline_mcp_settings.json
+                                                 └─→ Windsurf Writer  ─→ ~/.codeium/windsurf/mcp_config.json
 ```
 
 | Stage | Description |
@@ -227,6 +240,10 @@ pnpm test            # Run tests
 | **Cursor Writer** | Same format as Claude, `${VAR:-default}` → expanded |
 | **Kimi Writer** | Same format as Claude, `${VAR:-default}` → expanded |
 | **Vibe Writer** | JSON → TOML `[[mcp_servers]]` array-of-tables, explicit `transport` field, `${VAR:-default}` → expanded |
+| **Qwen Writer** | JSON → JSON, `type: "http"` → `httpUrl`, `${VAR}` → `$VAR` (same as Gemini) |
+| **Amp Writer** | JSON → JSON, uses `"amp.mcpServers"` key, `${VAR}` preserved (same as Claude) |
+| **Cline Writer** | Same format as Claude, `${VAR:-default}` → expanded |
+| **Windsurf Writer** | JSON → JSON, `url` → `serverUrl`, `${VAR}` → `${env:VAR}` |
 
 ### Instruction Sync (`sync-instructions`)
 
@@ -238,11 +255,13 @@ Syncs CLAUDE.md instruction files to each target's native format:
 ~/.claude/CLAUDE.md (+ ~/.claude/rules/*.md) ─→ expand @imports ──┼─→ ~/.config/opencode/AGENTS.md    (plain copy)
                                           ├─→ ~/.kimi/AGENTS.md               (plain copy)
                                           ├─→ ~/.vibe/AGENTS.md               (plain copy)
+                                          ├─→ ~/.qwen/AGENTS.md               (plain copy)
+                                          ├─→ ~/.config/amp/AGENTS.md         (plain copy)
                                           ├─→ ~/.kiro/steering/claude-instructions.md  (+ inclusion: always)
                                           └─→ ⚠ Cursor global not supported  (SQLite)
 
                                           ┌─→ ./GEMINI.md                     (plain copy)
-                                          ├─→ ./AGENTS.md                     (Codex + OpenCode + Kimi + Vibe share)
+                                          ├─→ ./AGENTS.md                     (Codex + OpenCode + Kimi + Vibe + Qwen + Amp share)
 ./.claude/CLAUDE.md (fallback: ./CLAUDE.md) + ./.claude/rules/*.md ─→ expand @imports ──┼─→ .kiro/steering/claude-instructions.md    (+ inclusion: always)
                                           └─→ .cursor/rules/claude-instructions.mdc   (+ alwaysApply: true)
 ```
@@ -252,8 +271,12 @@ Syncs CLAUDE.md instruction files to each target's native format:
 | Gemini | `~/.gemini/GEMINI.md` | `./GEMINI.md` | Plain copy (expand standalone `@import` lines) |
 | Codex | `~/.codex/AGENTS.md` | `./AGENTS.md` | Plain copy (expand standalone `@import` lines) |
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` (shared with Codex) | Plain copy (expand standalone `@import` lines) |
-| Kimi | `~/.kimi/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Vibe) | Plain copy (expand standalone `@import` lines) |
-| Vibe | `~/.vibe/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Kimi) | Plain copy (expand standalone `@import` lines) |
+| Kimi | `~/.kimi/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Vibe/Qwen/Amp) | Plain copy (expand standalone `@import` lines) |
+| Vibe | `~/.vibe/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Kimi/Qwen/Amp) | Plain copy (expand standalone `@import` lines) |
+| Qwen Code | `~/.qwen/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Kimi/Vibe/Amp) | Plain copy (expand standalone `@import` lines) |
+| Amp | `~/.config/amp/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Kimi/Vibe/Qwen) | Plain copy (expand standalone `@import` lines) |
+| Cline | Not supported | Not supported (uses `.clinerules`) | — |
+| Windsurf | Not supported | Not supported (uses own rules format) | — |
 | Aider | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | Plain copy + upsert `read` entry in `.aider.conf.yml` |
 | Kiro | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Add `inclusion: always` frontmatter |
 | Cursor | Not supported (SQLite) | `.cursor/rules/claude-instructions.mdc` | Add `alwaysApply: true` frontmatter |
@@ -422,15 +445,110 @@ transport = "streamable-http"
 url = "https://mcp.supabase.com/mcp"
 ```
 
+### Target: Qwen Code
+
+Writes to **`~/.qwen/settings.json`** → `mcpServers` object. Use `--qwen-home <path>` to sync to a custom base directory.
+
+Same conversion pattern as Gemini:
+- Claude `type: "http"` → Qwen `httpUrl`
+- Claude `type: "sse"` → Qwen `url`
+- Env var syntax: Claude `${VAR}` → Qwen `$VAR` (auto-converted)
+
+```jsonc
+// ~/.qwen/settings.json
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "sentry": {
+      "httpUrl": "https://mcp.sentry.dev/mcp"
+    }
+  }
+}
+```
+
+### Target: Amp (Sourcegraph)
+
+Writes to **`~/.config/amp/settings.json`** → `"amp.mcpServers"` key. Use `--amp-home <path>` to sync to a custom base directory.
+
+Key format differences:
+- Root key is `"amp.mcpServers"` (not `mcpServers`)
+- `url` field preserved as-is (same as Claude)
+- `${VAR}` syntax preserved (no conversion needed)
+
+```jsonc
+// ~/.config/amp/settings.json
+{
+  "amp.mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
+    }
+  }
+}
+```
+
+### Target: Cline CLI
+
+Writes to **`~/.cline/data/settings/cline_mcp_settings.json`** → `mcpServers` object. Use `--cline-home <path>` to sync to a custom base directory.
+
+Same format as Claude Code. `${VAR:-default}` syntax in URLs is auto-expanded during sync.
+
+```jsonc
+// ~/.cline/data/settings/cline_mcp_settings.json
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
+    }
+  }
+}
+```
+
+### Target: Windsurf
+
+Writes to **`~/.codeium/windsurf/mcp_config.json`** → `mcpServers` object. Use `--windsurf-home <path>` to sync to a custom base directory.
+
+Key format differences:
+- Claude `url` → Windsurf `serverUrl`
+- Env var syntax: Claude `${VAR}` → Windsurf `${env:VAR}` (auto-converted)
+
+```jsonc
+// ~/.codeium/windsurf/mcp_config.json
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "sentry": {
+      "type": "http",
+      "serverUrl": "https://mcp.sentry.dev/mcp"
+    }
+  }
+}
+```
+
 ## Transport Type Mapping
 
-| Claude Code | Gemini CLI | Codex CLI | OpenCode | Kiro CLI | Cursor | Kimi CLI | Vibe CLI |
-|------------|-----------|----------|----------|----------|--------|----------|----------|
-| `command` + `args` (stdio) | `command` + `args` | `command` + `args` | `type: "local"`, `command: [cmd, ...args]` | same as Claude | same as Claude | same as Claude | `transport: "stdio"`, `command` + `args` + `name` |
-| `type: "http"` + `url` | `httpUrl` | `url` | `type: "remote"`, `url` | same as Claude | same as Claude | same as Claude | `transport: "streamable-http"`, `url` + `name` |
-| `type: "sse"` + `url` | `url` | `url` | `type: "remote"`, `url` | same as Claude | same as Claude | same as Claude | `transport: "http"`, `url` + `name` |
-| `env` | `env` | `env` | `environment` | `env` | `env` | `env` | `env` |
-| `oauth` | skipped | skipped | skipped | skipped | skipped | skipped | skipped |
+| Claude Code | Gemini CLI | Codex CLI | OpenCode | Kiro CLI | Cursor | Kimi CLI | Vibe CLI | Qwen Code | Amp | Cline CLI | Windsurf |
+|------------|-----------|----------|----------|----------|--------|----------|----------|-----------|-----|-----------|----------|
+| `command` + `args` (stdio) | `command` + `args` | `command` + `args` | `type: "local"`, `command: [cmd, ...args]` | same as Claude | same as Claude | same as Claude | `transport: "stdio"`, `command` + `args` + `name` | `command` + `args` | same as Claude | same as Claude | `command` + `args` |
+| `type: "http"` + `url` | `httpUrl` | `url` | `type: "remote"`, `url` | same as Claude | same as Claude | same as Claude | `transport: "streamable-http"`, `url` + `name` | `httpUrl` | same as Claude | same as Claude | `serverUrl` |
+| `type: "sse"` + `url` | `url` | `url` | `type: "remote"`, `url` | same as Claude | same as Claude | same as Claude | `transport: "http"`, `url` + `name` | `url` | same as Claude | same as Claude | `serverUrl` |
+| `env` | `env` | `env` | `environment` | `env` | `env` | `env` | `env` | `env` | `env` | `env` | `env` |
+| `oauth` | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped |
 
 ## Backup
 
@@ -446,8 +564,10 @@ Every sync automatically backs up all affected config files to `~/.sync-agents-b
 ├── .codex/
 │   └── config.toml               # ← ~/.codex/config.toml
 ├── .config/
-│   └── opencode/
-│       └── opencode.json         # ← ~/.config/opencode/opencode.json
+│   ├── opencode/
+│   │   └── opencode.json         # ← ~/.config/opencode/opencode.json
+│   └── amp/
+│       └── settings.json         # ← ~/.config/amp/settings.json
 ├── .kiro/
 │   └── settings/
 │       └── mcp.json              # ← ~/.kiro/settings/mcp.json
@@ -455,8 +575,17 @@ Every sync automatically backs up all affected config files to `~/.sync-agents-b
 │   └── mcp.json                  # ← ~/.cursor/mcp.json
 ├── .kimi/
 │   └── mcp.json                  # ← ~/.kimi/mcp.json
-└── .vibe/
-    └── config.toml               # ← ~/.vibe/config.toml
+├── .vibe/
+│   └── config.toml               # ← ~/.vibe/config.toml
+├── .qwen/
+│   └── settings.json             # ← ~/.qwen/settings.json
+├── .cline/
+│   └── data/
+│       └── settings/
+│           └── cline_mcp_settings.json  # ← ~/.cline/data/settings/cline_mcp_settings.json
+└── .codeium/
+    └── windsurf/
+        └── mcp_config.json       # ← ~/.codeium/windsurf/mcp_config.json
 ```
 
 Use `--no-backup` to skip. Target directories that don't exist (CLI not installed) will be skipped with a warning, not created.
@@ -483,6 +612,14 @@ Use `--no-backup` to skip. Target directories that don't exist (CLI not installe
 | Kimi CLI (project) | `.kimi/mcp.json` (use `--kimi-home ./.kimi`) | JSON |
 | Vibe CLI (global) | `~/.vibe/config.toml` | TOML |
 | Vibe CLI (project) | `.vibe/config.toml` (use `--vibe-home ./.vibe`) | TOML |
+| Qwen Code (global) | `~/.qwen/settings.json` | JSON |
+| Qwen Code (project) | `.qwen/settings.json` (use `--qwen-home ./.qwen`) | JSON |
+| Amp (global) | `~/.config/amp/settings.json` | JSON |
+| Amp (project) | `.config/amp/settings.json` (use `--amp-home ./.amp`) | JSON |
+| Cline CLI (global) | `~/.cline/data/settings/cline_mcp_settings.json` | JSON |
+| Cline CLI (project) | `.cline/data/settings/cline_mcp_settings.json` (use `--cline-home ./.cline`) | JSON |
+| Windsurf (global) | `~/.codeium/windsurf/mcp_config.json` | JSON |
+| Windsurf (project) | `.codeium/windsurf/mcp_config.json` (use `--windsurf-home ./.codeium/windsurf`) | JSON |
 
 ### Instruction Files
 
@@ -494,6 +631,10 @@ Use `--no-backup` to skip. Target directories that don't exist (CLI not installe
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` | Markdown |
 | Kimi CLI | `~/.kimi/AGENTS.md` | `./AGENTS.md` | Markdown |
 | Vibe CLI | `~/.vibe/AGENTS.md` | `./AGENTS.md` | Markdown |
+| Qwen Code | `~/.qwen/AGENTS.md` | `./AGENTS.md` | Markdown |
+| Amp | `~/.config/amp/AGENTS.md` | `./AGENTS.md` | Markdown |
+| Cline CLI | Not supported | Not supported (uses `.clinerules`) | — |
+| Windsurf | Not supported | Not supported (uses own rules format) | — |
 | Kiro CLI | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Markdown + frontmatter |
 | Cursor | Not supported (SQLite) | `.cursor/rules/claude-instructions.mdc` | MDC (Markdown + frontmatter) |
 

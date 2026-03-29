@@ -21,6 +21,10 @@ Optional flags:
 - `--codex-home <path>` — custom Codex config directory
 - `--kimi-home <path>` — custom Kimi config directory
 - `--vibe-home <path>` — custom Vibe config directory
+- `--qwen-home <path>` — custom Qwen Code config directory
+- `--amp-home <path>` — custom Amp config directory
+- `--cline-home <path>` — custom Cline CLI config directory
+- `--windsurf-home <path>` — custom Windsurf config directory
 - `--report json` — emit machine-readable JSON only (for CI)
 
 ## Execution Flow

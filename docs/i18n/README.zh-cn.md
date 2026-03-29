@@ -7,14 +7,14 @@
 [![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2)](https://modelcontextprotocol.io/)
 [![CI](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml/badge.svg)](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml)
 
-将 **Claude Code** 的 MCP server 配置和指令文件（CLAUDE.md）同步到 **Gemini CLI**、**Codex CLI**、**OpenCode**、**Kiro CLI**、**Cursor**、**Kimi CLI**、**Vibe CLI**（Mistral）和 **Aider CLI**。
+将 **Claude Code** 的 MCP server 配置和指令文件（CLAUDE.md）同步到 **Gemini CLI**、**Codex CLI**、**OpenCode**、**Kiro CLI**、**Cursor**、**Kimi CLI**、**Vibe CLI**（Mistral）、**Qwen Code**、**Amp**（Sourcegraph）、**Cline CLI**、**Windsurf** 和 **Aider CLI**。
 
 **其他语言：** [🇺🇸 English](../../README.md) | [🇹🇼 繁體中文](README.zh-tw.md) | [🇯🇵 日本語](README.ja.md) | [🇰🇷 한국어](README.ko.md)
 **支持矩阵：** [CLI 兼容性矩阵](../compatibility-matrix.md)
 
 ## 为什么需要这个工具
 
-如果你主要用 Claude Code 开发，但也会切换其他 AI agent（Gemini CLI、Codex CLI、OpenCode、Kiro、Cursor、Kimi CLI、Vibe CLI、Aider CLI）来利用各家的免费额度或不同模型，你一定知道这个痛点——每个工具的 MCP 配置格式都不一样，一个一个配置实在太累。
+如果你主要用 Claude Code 开发，但也会切换其他 AI agent（Gemini CLI、Codex CLI、OpenCode、Kiro、Cursor、Kimi CLI、Vibe CLI、Qwen Code、Amp、Cline CLI、Windsurf、Aider CLI）来利用各家的免费额度或不同模型，你一定知道这个痛点——每个工具的 MCP 配置格式都不一样，一个一个配置实在太累。
 
 指令文件也是一样——CLAUDE.md、GEMINI.md、AGENTS.md 都需要相同的内容，但格式各不相同。
 
@@ -86,6 +86,10 @@ sync-agents sync --target kiro
 sync-agents sync --target cursor
 sync-agents sync --target kimi
 sync-agents sync --target vibe
+sync-agents sync --target qwen
+sync-agents sync --target amp
+sync-agents sync --target cline
+sync-agents sync --target windsurf
 
 # 同步到 Codex 项目级配置
 sync-agents sync --target codex --codex-home ./my-project/.codex
@@ -105,7 +109,7 @@ sync-agents sync --no-backup
 # 详细输出
 sync-agents sync -v
 
-# 同步指令文件（CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules / Aider conventions）
+# 同步指令文件（CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules / Amp AGENTS.md / Qwen AGENTS.md / Aider conventions）
 sync-agents sync-instructions
 
 # 只同步全局指令
@@ -115,7 +119,7 @@ sync-agents sync-instructions --global
 sync-agents sync-instructions --local
 
 # 同步到特定目标
-sync-agents sync-instructions --target gemini codex kimi vibe aider
+sync-agents sync-instructions --target gemini codex kimi vibe qwen amp aider
 
 # 自动覆盖不询问（适用于 CI）
 sync-agents sync-instructions --on-conflict overwrite
@@ -143,7 +147,11 @@ sync-agents sync-instructions --dry-run
                                                  ├─→ Kiro Writer     ─→ ~/.kiro/settings/mcp.json
                                                  ├─→ Cursor Writer   ─→ ~/.cursor/mcp.json
                                                  ├─→ Kimi Writer     ─→ ~/.kimi/mcp.json
-                                                 └─→ Vibe Writer     ─→ ~/.vibe/config.toml
+                                                 ├─→ Vibe Writer     ─→ ~/.vibe/config.toml
+                                                 ├─→ Qwen Writer     ─→ ~/.qwen/settings.json
+                                                 ├─→ Amp Writer      ─→ ~/.config/amp/settings.json
+                                                 ├─→ Cline Writer    ─→ ~/.cline/data/settings/cline_mcp_settings.json
+                                                 └─→ Windsurf Writer ─→ ~/.codeium/windsurf/mcp_config.json
 ```
 
 | 阶段 | 说明 |
@@ -156,6 +164,10 @@ sync-agents sync-instructions --dry-run
 | **Cursor Writer** | 与 Claude 相同格式，`${VAR:-default}` → 展开 |
 | **Kimi Writer** | 与 Claude 相同格式，`${VAR:-default}` → 展开 |
 | **Vibe Writer** | JSON → TOML `[[mcp_servers]]`，需要 transport 字段，`${VAR:-default}` → 展开 |
+| **Qwen Writer** | JSON → JSON，`type: "http"` → `httpUrl`，`${VAR}` → `$VAR`（与 Gemini 相同模式） |
+| **Amp Writer** | JSON → JSON，使用 `"amp.mcpServers"` 点号键，`${VAR}` 保留 |
+| **Cline Writer** | 与 Claude 相同格式（Claude format） |
+| **Windsurf Writer** | JSON → JSON，`url` → `serverUrl`，`${VAR}` → `${env:VAR}` |
 
 ### 指令文件同步（`sync-instructions`）
 
@@ -168,6 +180,8 @@ sync-agents sync-instructions --dry-run
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md`（与 Codex 共用） | 直接复制（展开独立行 `@import`） |
 | Kimi | `~/.kimi/AGENTS.md` | `./AGENTS.md`（与 Codex / OpenCode / Vibe 共用） | 直接复制（展开独立行 `@import`） |
 | Vibe | `~/.vibe/AGENTS.md` | `./AGENTS.md`（与 Codex / OpenCode / Kimi 共用） | 直接复制（展开独立行 `@import`） |
+| Qwen | `~/.qwen/AGENTS.md` | `./AGENTS.md`（与 Codex / OpenCode / Kimi / Vibe 共用） | 直接复制（展开独立行 `@import`） |
+| Amp | `~/.config/amp/AGENTS.md` | `./AGENTS.md`（与 Codex / OpenCode / Kimi / Vibe / Qwen 共用） | 直接复制（展开独立行 `@import`） |
 | Aider | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | 直接复制 + 自动更新 `.aider.conf.yml` `read` |
 | Kiro | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | 加上 `inclusion: always` frontmatter |
 | Cursor | 不支持（SQLite） | `.cursor/rules/claude-instructions.mdc` | 加上 `alwaysApply: true` frontmatter |
@@ -209,6 +223,10 @@ sync-agents sync-instructions --dry-run
 | Kimi CLI（项目） | `.kimi/mcp.json`（用 `--kimi-home ./.kimi`） | JSON |
 | Vibe CLI（全局） | `~/.vibe/config.toml` | TOML |
 | Vibe CLI（项目） | `.vibe/config.toml`（用 `--vibe-home ./.vibe`） | TOML |
+| Qwen Code（全局） | `~/.qwen/settings.json` | JSON |
+| Amp（全局） | `~/.config/amp/settings.json` | JSON |
+| Cline CLI（全局） | `~/.cline/data/settings/cline_mcp_settings.json` | JSON |
+| Windsurf（全局） | `~/.codeium/windsurf/mcp_config.json` | JSON |
 
 ### 指令文件路径
 
@@ -220,9 +238,13 @@ sync-agents sync-instructions --dry-run
 | OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` | Markdown |
 | Kimi CLI | `~/.kimi/AGENTS.md` | `./AGENTS.md` | Markdown |
 | Vibe CLI | `~/.vibe/AGENTS.md` | `./AGENTS.md` | Markdown |
+| Qwen Code | `~/.qwen/AGENTS.md` | `./AGENTS.md` | Markdown |
+| Amp | `~/.config/amp/AGENTS.md` | `./AGENTS.md` | Markdown |
 | Aider CLI | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | Markdown |
 | Kiro CLI | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Markdown + frontmatter |
 | Cursor | 不支持（SQLite） | `.cursor/rules/claude-instructions.mdc` | MDC（Markdown + frontmatter） |
+| Cline CLI | 不支持指令同步 | 不支持指令同步 | — |
+| Windsurf | 不支持指令同步 | 不支持指令同步 | — |
 
 ## Claude Code Plugin
 
