@@ -10,6 +10,7 @@ import { resolveVibeConfigPath } from "./writers/vibe.js";
 import { resolveQwenSettingsPath } from "./writers/qwen.js";
 import { resolveAmpSettingsPath } from "./writers/amp.js";
 import { resolveClineMcpConfigPath } from "./writers/cline.js";
+import { resolveWindsurfMcpConfigPath } from "./writers/windsurf.js";
 import type { SyncTarget } from "./types.js";
 
 type TargetStatus = "ok" | "drift" | "unavailable" | "error";
@@ -38,6 +39,7 @@ export interface DoctorOptions {
   qwenHome?: string;
   ampHome?: string;
   clineHome?: string;
+  windsurfHome?: string;
 }
 
 interface ReadNamesResult {
@@ -61,7 +63,8 @@ export function runDoctor(targets: SyncTarget[], options: DoctorOptions = {}): D
       options.vibeHome,
       options.qwenHome,
       options.ampHome,
-      options.clineHome
+      options.clineHome,
+      options.windsurfHome
     );
 
     if (readResult.status === "error") {
@@ -127,7 +130,8 @@ function readTargetNames(
   vibeHome?: string,
   qwenHome?: string,
   ampHome?: string,
-  clineHome?: string
+  clineHome?: string,
+  windsurfHome?: string
 ): ReadNamesResult {
   if (target === "vibe") {
     return readTomlTargetNames(resolveVibeConfigPath(vibeHome), (parsed) => {
@@ -143,7 +147,14 @@ function readTargetNames(
     });
   }
 
-  const targetConfig = getJsonTargetConfig(target, kimiHome, qwenHome, ampHome, clineHome);
+  const targetConfig = getJsonTargetConfig(
+    target,
+    kimiHome,
+    qwenHome,
+    ampHome,
+    clineHome,
+    windsurfHome
+  );
   const targetDir = dirname(targetConfig.path);
   if (!existsSync(targetDir)) {
     return {
@@ -179,7 +190,8 @@ function getJsonTargetConfig(
   kimiHome?: string,
   qwenHome?: string,
   ampHome?: string,
-  clineHome?: string
+  clineHome?: string,
+  windsurfHome?: string
 ): {
   path: string;
   key: string;
@@ -204,6 +216,9 @@ function getJsonTargetConfig(
   }
   if (target === "cline") {
     return { path: resolveClineMcpConfigPath(clineHome), key: "mcpServers" };
+  }
+  if (target === "windsurf") {
+    return { path: resolveWindsurfMcpConfigPath(windsurfHome), key: "mcpServers" };
   }
   return { path: PATHS.cursorMcpConfig, key: "mcpServers" };
 }

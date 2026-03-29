@@ -13,6 +13,7 @@ import { writeToVibe, resolveVibeConfigPath } from "./writers/vibe.js";
 import { writeToQwen, resolveQwenSettingsPath } from "./writers/qwen.js";
 import { writeToAmp, resolveAmpSettingsPath } from "./writers/amp.js";
 import { writeToCline, resolveClineMcpConfigPath } from "./writers/cline.js";
+import { writeToWindsurf, resolveWindsurfMcpConfigPath } from "./writers/windsurf.js";
 import { createBackup, getFilesToBackup } from "./backup.js";
 import { PATHS } from "./paths.js";
 import type { SyncTarget, UnifiedMcpServer } from "./types.js";
@@ -56,7 +57,7 @@ program
   .description("Sync MCP settings from Claude Code to other CLIs")
   .option(
     "-t, --target <targets...>",
-    "sync targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline, aider)",
+    "sync targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline, windsurf, aider)",
     [
       "gemini",
       "codex",
@@ -68,6 +69,7 @@ program
       "qwen",
       "amp",
       "cline",
+      "windsurf",
       "aider",
     ]
   )
@@ -99,6 +101,10 @@ program
     "--cline-home <path>",
     "Cline config directory (default: ~/.cline, or specify project-level .cline/)"
   )
+  .option(
+    "--windsurf-home <path>",
+    "Windsurf config directory (default: ~/.codeium/windsurf, or specify project-level)"
+  )
   .option("--report <format>", "output format: text or json", "text")
   .option("-v, --verbose", "show detailed output", false)
   .action(async (opts) => {
@@ -114,6 +120,7 @@ program
     const qwenHome = opts.qwenHome as string | undefined;
     const ampHome = opts.ampHome as string | undefined;
     const clineHome = opts.clineHome as string | undefined;
+    const windsurfHome = opts.windsurfHome as string | undefined;
     const reportFormat = opts.report as string;
     const jsonReport = reportFormat === "json";
 
@@ -172,6 +179,7 @@ program
     const qwenConfigPath = resolveQwenSettingsPath(qwenHome);
     const ampConfigPath = resolveAmpSettingsPath(ampHome);
     const clineConfigPath = resolveClineMcpConfigPath(clineHome);
+    const windsurfConfigPath = resolveWindsurfMcpConfigPath(windsurfHome);
     if (!skipBackup && !dryRun) {
       if (!jsonReport) {
         console.log("💾 Backing up config files...");
@@ -184,7 +192,8 @@ program
           vibeConfigPath,
           qwenConfigPath,
           ampConfigPath,
-          clineConfigPath
+          clineConfigPath,
+          windsurfConfigPath
         )
       );
       if (!jsonReport) {
@@ -301,6 +310,18 @@ program
           console.log(`  Target: ${result.configPath}`);
           printResult(result.added, result.skipped);
         }
+      } else if (target === "windsurf") {
+        const result = writeToWindsurf(servers, dryRun, windsurfHome);
+        targetReports.push({
+          target,
+          added: result.added,
+          skipped: result.skipped,
+          configPath: result.configPath,
+        });
+        if (!jsonReport) {
+          console.log(`  Target: ${result.configPath}`);
+          printResult(result.added, result.skipped);
+        }
       }
       if (!jsonReport) {
         console.log();
@@ -372,8 +393,20 @@ program
   .description("Compare MCP settings between Claude Code and other CLIs")
   .option(
     "-t, --target <targets...>",
-    "comparison targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp", "cline"]
+    "comparison targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline, windsurf)",
+    [
+      "gemini",
+      "codex",
+      "opencode",
+      "kiro",
+      "cursor",
+      "kimi",
+      "vibe",
+      "qwen",
+      "amp",
+      "cline",
+      "windsurf",
+    ]
   )
   .option(
     "--kimi-home <path>",
@@ -391,6 +424,10 @@ program
     "--cline-home <path>",
     "Cline config directory (default: ~/.cline, or specify project-level .cline/)"
   )
+  .option(
+    "--windsurf-home <path>",
+    "Windsurf config directory (default: ~/.codeium/windsurf, or specify project-level)"
+  )
   .option("--report <format>", "output format: text or json", "text")
   .action((opts) => {
     const targets = opts.target as SyncTarget[];
@@ -398,6 +435,7 @@ program
     const qwenHome = opts.qwenHome as string | undefined;
     const ampHome = opts.ampHome as string | undefined;
     const clineHome = opts.clineHome as string | undefined;
+    const windsurfHome = opts.windsurfHome as string | undefined;
     const reportFormat = opts.report as string;
     const jsonReport = reportFormat === "json";
 
@@ -423,6 +461,7 @@ program
       qwen: { path: resolveQwenSettingsPath(qwenHome) },
       amp: { path: resolveAmpSettingsPath(ampHome), key: "amp.mcpServers" },
       cline: { path: resolveClineMcpConfigPath(clineHome) },
+      windsurf: { path: resolveWindsurfMcpConfigPath(windsurfHome) },
     };
     const targetReports: Array<{
       target: string;
@@ -494,8 +533,20 @@ program
   .description("Detect MCP config drift between Claude Code and target CLIs")
   .option(
     "-t, --target <targets...>",
-    "doctor targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp", "cline"]
+    "doctor targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline, windsurf)",
+    [
+      "gemini",
+      "codex",
+      "opencode",
+      "kiro",
+      "cursor",
+      "kimi",
+      "vibe",
+      "qwen",
+      "amp",
+      "cline",
+      "windsurf",
+    ]
   )
   .option("--skip-oauth", "ignore OAuth-only Claude servers", false)
   .option("--fix", "auto-run reconcile when drift is detected", false)
@@ -526,6 +577,10 @@ program
     "--cline-home <path>",
     "Cline config directory (default: ~/.cline, or specify project-level .cline/)"
   )
+  .option(
+    "--windsurf-home <path>",
+    "Windsurf config directory (default: ~/.codeium/windsurf, or specify project-level)"
+  )
   .action((opts) => {
     const targets = opts.target as SyncTarget[];
     const skipOAuth = opts.skipOauth as boolean;
@@ -539,6 +594,7 @@ program
     const qwenHome = opts.qwenHome as string | undefined;
     const ampHome = opts.ampHome as string | undefined;
     const clineHome = opts.clineHome as string | undefined;
+    const windsurfHome = opts.windsurfHome as string | undefined;
     const jsonReport = reportFormat === "json";
 
     if (reportFormat !== "text" && reportFormat !== "json") {
@@ -565,6 +621,7 @@ program
         qwenHome,
         ampHome,
         clineHome,
+        windsurfHome,
       });
       if (fixed.status === "failed") {
         if (fixed.reason === "doctor_parse") {
@@ -594,6 +651,7 @@ program
       qwenHome,
       ampHome,
       clineHome,
+      windsurfHome,
     });
 
     if (jsonReport) {
@@ -646,8 +704,20 @@ program
   .description("Validate MCP schema and target capability compatibility")
   .option(
     "-t, --target <targets...>",
-    "validation targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp", "cline"]
+    "validation targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline, windsurf)",
+    [
+      "gemini",
+      "codex",
+      "opencode",
+      "kiro",
+      "cursor",
+      "kimi",
+      "vibe",
+      "qwen",
+      "amp",
+      "cline",
+      "windsurf",
+    ]
   )
   .option("--skip-oauth", "ignore OAuth-only Claude servers", false)
   .option("--fix", "auto-run reconcile after validation passes", false)
@@ -660,6 +730,7 @@ program
   .option("--qwen-home <path>", "Qwen config directory (used by --fix for reconcile)")
   .option("--amp-home <path>", "Amp config directory (used by --fix for reconcile)")
   .option("--cline-home <path>", "Cline config directory (used by --fix for reconcile)")
+  .option("--windsurf-home <path>", "Windsurf config directory (used by --fix for reconcile)")
   .action((opts) => {
     const targets = opts.target as SyncTarget[];
     const skipOAuth = opts.skipOauth as boolean;
@@ -673,6 +744,7 @@ program
     const qwenHome = opts.qwenHome as string | undefined;
     const ampHome = opts.ampHome as string | undefined;
     const clineHome = opts.clineHome as string | undefined;
+    const windsurfHome = opts.windsurfHome as string | undefined;
     const jsonReport = reportFormat === "json";
 
     if (reportFormat !== "text" && reportFormat !== "json") {
@@ -745,6 +817,7 @@ program
         qwenHome,
         ampHome,
         clineHome,
+        windsurfHome,
       });
       if (fixed.status === "failed") {
         if (fixed.reason === "doctor_parse") {
@@ -771,8 +844,20 @@ program
   .description("Validate + detect drift + sync only missing MCP servers")
   .option(
     "-t, --target <targets...>",
-    "reconcile targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp", "cline"]
+    "reconcile targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline, windsurf)",
+    [
+      "gemini",
+      "codex",
+      "opencode",
+      "kiro",
+      "cursor",
+      "kimi",
+      "vibe",
+      "qwen",
+      "amp",
+      "cline",
+      "windsurf",
+    ]
   )
   .option("--dry-run", "preview mode, no files will be written", false)
   .option("--no-backup", "skip backup")
@@ -802,6 +887,10 @@ program
     "--cline-home <path>",
     "Cline config directory (default: ~/.cline, or specify project-level .cline/)"
   )
+  .option(
+    "--windsurf-home <path>",
+    "Windsurf config directory (default: ~/.codeium/windsurf, or specify project-level)"
+  )
   .option("--report <format>", "output format: text or json", "text")
   .action((opts) => {
     const targets = opts.target as SyncTarget[];
@@ -815,6 +904,7 @@ program
     const qwenHome = opts.qwenHome as string | undefined;
     const ampHome = opts.ampHome as string | undefined;
     const clineHome = opts.clineHome as string | undefined;
+    const windsurfHome = opts.windsurfHome as string | undefined;
     const reportFormat = opts.report as string;
     const jsonReport = reportFormat === "json";
 
@@ -838,6 +928,7 @@ program
       qwenHome,
       ampHome,
       clineHome,
+      windsurfHome,
     });
 
     if (jsonReport) {
@@ -903,8 +994,20 @@ program
   .description("Sync CLAUDE.md instruction files to other AI agent formats")
   .option(
     "-t, --target <targets...>",
-    "sync targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp", "cline"]
+    "sync targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, cline, windsurf)",
+    [
+      "gemini",
+      "codex",
+      "opencode",
+      "kiro",
+      "cursor",
+      "kimi",
+      "vibe",
+      "qwen",
+      "amp",
+      "cline",
+      "windsurf",
+    ]
   )
   .option("--global", "sync global config (~/.claude/CLAUDE.md)", false)
   .option(
@@ -1131,6 +1234,7 @@ function getTargetLabel(target: SyncTarget): string {
   if (target === "qwen") return "Qwen";
   if (target === "amp") return "Amp";
   if (target === "cline") return "Cline";
+  if (target === "windsurf") return "Windsurf";
   return target.toUpperCase();
 }
 

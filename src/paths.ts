@@ -41,6 +41,9 @@ export const PATHS = {
   // Cline CLI
   clineMcpConfig: join(HOME, ".cline", "data", "settings", "cline_mcp_settings.json"),
 
+  // Windsurf
+  windsurfMcpConfig: join(HOME, ".codeium", "windsurf", "mcp_config.json"),
+
   // Instructions (global)
   claudeMdGlobal: join(HOME, ".claude", "CLAUDE.md"),
   geminiMdGlobal: join(HOME, ".gemini", "GEMINI.md"),

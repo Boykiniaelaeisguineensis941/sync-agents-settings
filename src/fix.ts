@@ -17,6 +17,7 @@ export interface AutoFixOptions {
   qwenHome?: string;
   ampHome?: string;
   clineHome?: string;
+  windsurfHome?: string;
 }
 
 export interface AutoFixResult {
@@ -36,6 +37,7 @@ export function runAutoFix(options: AutoFixOptions): AutoFixResult {
       qwenHome: options.qwenHome,
       ampHome: options.ampHome,
       clineHome: options.clineHome,
+      windsurfHome: options.windsurfHome,
     });
 
     if (doctor.hasErrors) {
@@ -55,6 +57,7 @@ export function runAutoFix(options: AutoFixOptions): AutoFixResult {
       qwenHome: options.qwenHome,
       ampHome: options.ampHome,
       clineHome: options.clineHome,
+      windsurfHome: options.windsurfHome,
     });
     const mapped = mapReconcileOutcome(reconcile.status);
     return {
@@ -90,6 +93,7 @@ export function runAutoFix(options: AutoFixOptions): AutoFixResult {
     qwenHome: options.qwenHome,
     ampHome: options.ampHome,
     clineHome: options.clineHome,
+    windsurfHome: options.windsurfHome,
   });
   const mapped = mapReconcileOutcome(reconcile.status);
   return {

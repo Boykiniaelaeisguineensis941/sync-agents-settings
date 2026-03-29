@@ -51,7 +51,7 @@ Writers (src/writers/*.ts)
 
 1. **Claude-format targets** (Kiro, Cursor, Kimi, Cline): Use shared `claude-format.ts` — same `mcpServers` JSON format as Claude, just different file paths. Each writer is ~10 lines delegating to `writeClaudeFormat()`. Cline config lives at `~/.cline/data/settings/cline_mcp_settings.json`.
 
-2. **Custom JSON targets** (Gemini, OpenCode, Qwen Code, Amp): Own writer with format-specific conversion (`httpUrl`, `type: "local"/"remote"`, `environment` vs `env`). Qwen Code follows the Gemini pattern (settings.json with embedded `mcpServers`, `httpUrl` for HTTP, `$VAR` env syntax). Amp uses `"amp.mcpServers"` as the JSON key (dotted key) and `${VAR}` env syntax (same as Claude, no conversion needed).
+2. **Custom JSON targets** (Gemini, OpenCode, Qwen Code, Amp, Windsurf): Own writer with format-specific conversion (`httpUrl`, `type: "local"/"remote"`, `environment` vs `env`). Qwen Code follows the Gemini pattern (settings.json with embedded `mcpServers`, `httpUrl` for HTTP, `$VAR` env syntax). Amp uses `"amp.mcpServers"` as the JSON key (dotted key) and `${VAR}` env syntax (same as Claude, no conversion needed). Windsurf uses `serverUrl` instead of `url` for remote servers and `${env:VAR}` env syntax.
 
 3. **TOML targets** (Codex, Vibe): Convert JSON to TOML via `@iarna/toml`. Codex uses `[mcp_servers.<name>]` (table-per-key), Vibe uses `[[mcp_servers]]` (array-of-tables with `name` + `transport` fields).
 

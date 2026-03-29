@@ -22,6 +22,7 @@ export type InstructionsTarget =
   | "qwen"
   | "amp"
   | "cline"
+  | "windsurf"
   | "aider";
 export type ImportMode = "inline" | "strip";
 

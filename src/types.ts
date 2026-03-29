@@ -132,4 +132,5 @@ export type SyncTarget =
   | "vibe"
   | "qwen"
   | "amp"
-  | "cline";
+  | "cline"
+  | "windsurf";

@@ -36,7 +36,8 @@ export function getFilesToBackup(
   vibeConfigPath?: string,
   qwenConfigPath?: string,
   ampConfigPath?: string,
-  clineConfigPath?: string
+  clineConfigPath?: string,
+  windsurfConfigPath?: string
 ): string[] {
   const files = [PATHS.claudeJson, PATHS.claudeSettings];
 
@@ -69,6 +70,9 @@ export function getFilesToBackup(
   }
   if (targets.includes("cline")) {
     files.push(clineConfigPath ?? PATHS.clineMcpConfig);
+  }
+  if (targets.includes("windsurf")) {
+    files.push(windsurfConfigPath ?? PATHS.windsurfMcpConfig);
   }
 
   return files;
