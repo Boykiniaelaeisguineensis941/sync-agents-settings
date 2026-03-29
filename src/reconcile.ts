@@ -20,6 +20,7 @@ export interface ReconcileOptions {
   dryRun?: boolean;
   skipBackup?: boolean;
   skipOAuth?: boolean;
+  serverFilter?: string[];
   codexHome?: string;
   kimiHome?: string;
   vibeHome?: string;
@@ -49,6 +50,10 @@ export function reconcileTargets(
   let servers = readClaudeMcpServers();
   if (options.skipOAuth) {
     servers = servers.filter((server) => !isOAuthOnlyServer(server));
+  }
+  if (options.serverFilter && options.serverFilter.length > 0) {
+    const filterSet = new Set(options.serverFilter);
+    servers = servers.filter((server) => filterSet.has(server.name));
   }
 
   const validation = validateServersForTargets(servers, targets, { skipOAuth: options.skipOAuth });

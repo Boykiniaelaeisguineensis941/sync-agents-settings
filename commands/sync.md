@@ -1,6 +1,6 @@
 ---
 name: sync
-description: Sync MCP server configurations from Claude Code to other AI agents (Gemini, Codex, OpenCode, Kiro, Cursor, Kimi)
+description: Sync MCP server configurations from Claude Code to other AI agents (Gemini, Codex, OpenCode, Kiro, Cursor, Kimi, Vibe)
 ---
 
 Sync MCP server settings from Claude Code to other AI coding agents.
@@ -8,19 +8,24 @@ Sync MCP server settings from Claude Code to other AI coding agents.
 ## Arguments
 
 The user may pass target names after the command: `/sync gemini codex`
-If no targets specified, sync to all targets (gemini, codex, opencode, kiro, cursor, kimi).
+If no targets specified, sync to all targets (gemini, codex, opencode, kiro, cursor, kimi, vibe).
+
+The user may also pass server names to sync only specific servers: `/sync --server context7 supabase`
 
 The user may also pass flags:
+- `--server <names...>` or `-s <names...>` — sync only specified MCP servers by name
 - `--skip-oauth` — skip MCP servers that require OAuth authentication
 - `--no-backup` — skip creating backup of target config files
 - `--codex-home <path>` — custom Codex config directory
 - `--kimi-home <path>` — custom Kimi config directory
+- `--vibe-home <path>` — custom Vibe config directory
 - `--report json` — output machine-readable JSON summary (CI-friendly)
 
 ## Execution Flow
 
-1. Parse targets from user arguments. Build the command:
+1. Parse targets and server names from user arguments. Build the command:
    `npx sync-agents-settings sync --dry-run --target <targets>`
+   Add `--server <names>` if the user specified specific servers.
    Add `--skip-oauth` or `--no-backup` if the user specified them.
 
 2. Run the dry-run command using bash. This previews what will change without writing files.

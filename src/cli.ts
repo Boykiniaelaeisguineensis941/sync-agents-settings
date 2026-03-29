@@ -46,7 +46,7 @@ program
   .description(
     "Sync Claude Code MCP settings to Gemini CLI / Codex CLI / OpenCode / Kiro CLI / Vibe CLI"
   )
-  .version("0.4.2");
+  .version("0.4.3");
 
 program
   .command("sync")
@@ -59,6 +59,7 @@ program
   .option("--dry-run", "preview mode, no files will be written", false)
   .option("--no-backup", "skip backup")
   .option("--skip-oauth", "skip MCP servers that require OAuth", false)
+  .option("-s, --server <names...>", "sync only specified MCP servers by name")
   .option(
     "--codex-home <path>",
     "Codex config directory (default: ~/.codex, or specify project-level .codex/)"
@@ -79,6 +80,7 @@ program
     const skipBackup = !opts.backup;
     const verbose = opts.verbose as boolean;
     const skipOAuth = opts.skipOauth as boolean;
+    const serverFilter = opts.server as string[] | undefined;
     const codexHome = opts.codexHome as string | undefined;
     const kimiHome = opts.kimiHome as string | undefined;
     const vibeHome = opts.vibeHome as string | undefined;
@@ -102,6 +104,11 @@ program
 
     if (skipOAuth) {
       servers = servers.filter((s) => !isOAuthOnlyServer(s));
+    }
+
+    if (serverFilter && serverFilter.length > 0) {
+      const filterSet = new Set(serverFilter);
+      servers = servers.filter((s) => filterSet.has(s.name));
     }
 
     if (!jsonReport) {
@@ -640,6 +647,7 @@ program
   .option("--dry-run", "preview mode, no files will be written", false)
   .option("--no-backup", "skip backup")
   .option("--skip-oauth", "ignore OAuth-only Claude servers", false)
+  .option("-s, --server <names...>", "reconcile only specified MCP servers by name")
   .option(
     "--codex-home <path>",
     "Codex config directory (default: ~/.codex, or specify project-level .codex/)"
@@ -658,6 +666,7 @@ program
     const dryRun = opts.dryRun as boolean;
     const skipBackup = !opts.backup;
     const skipOAuth = opts.skipOauth as boolean;
+    const serverFilter = opts.server as string[] | undefined;
     const codexHome = opts.codexHome as string | undefined;
     const kimiHome = opts.kimiHome as string | undefined;
     const vibeHome = opts.vibeHome as string | undefined;
@@ -677,6 +686,7 @@ program
       dryRun,
       skipBackup,
       skipOAuth,
+      serverFilter,
       codexHome,
       kimiHome,
       vibeHome,

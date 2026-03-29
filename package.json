@@ -1,7 +1,7 @@
 {
   "name": "sync-agents-settings",
   "packageManager": "pnpm@10.32.1",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Sync MCP server configurations and instruction files from Claude Code to Gemini CLI, Codex CLI, OpenCode, Kiro CLI, Cursor, Kimi CLI, and Vibe CLI",
   "main": "dist/cli.js",
   "bin": {

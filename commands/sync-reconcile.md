@@ -14,11 +14,13 @@ The user may pass target names: `/sync-reconcile gemini codex`
 If no targets are specified, reconcile all targets.
 
 Optional flags:
+- `--server <names...>` or `-s <names...>` — reconcile only specified MCP servers by name
 - `--dry-run` — preview only, no writes
 - `--no-backup` — skip backup before write
 - `--skip-oauth` — ignore OAuth-only servers
 - `--codex-home <path>` — custom Codex config directory
 - `--kimi-home <path>` — custom Kimi config directory
+- `--vibe-home <path>` — custom Vibe config directory
 - `--report json` — emit machine-readable JSON only (for CI)
 
 ## Execution Flow

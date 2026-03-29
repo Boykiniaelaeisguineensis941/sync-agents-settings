@@ -8,7 +8,7 @@ Compare which MCP servers exist in Claude Code vs other AI agents.
 ## Arguments
 
 The user may pass target names: `/sync-diff gemini`
-If no targets specified, compare all targets (gemini, codex, opencode, kiro, cursor, kimi).
+If no targets specified, compare all targets (gemini, codex, opencode, kiro, cursor, kimi, vibe).
 
 Optional flags:
 - `--report json` — output machine-readable JSON summary (CI-friendly)
@@ -29,4 +29,4 @@ Optional flags:
 ## Error Handling
 
 - If `npx` fails: suggest `npm install -g sync-agents-settings` as fallback.
-- Note: Codex diff shows a message to use `codex mcp list` instead (CLI limitation).
+- Note: Codex and Vibe diff show a note instead of actual comparison (TOML format limitation).

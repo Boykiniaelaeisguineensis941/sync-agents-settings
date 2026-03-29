@@ -13,6 +13,7 @@ const claudeDir = join(FAKE_HOME, ".claude");
 const geminiDir = join(FAKE_HOME, ".gemini");
 const codexDir = join(FAKE_HOME, ".codex");
 const aiderDir = join(FAKE_HOME, ".aider");
+const vibeDir = join(FAKE_HOME, ".vibe");
 const projectDir = join(TEST_DIR, "project");
 const pluginCacheDir = join(claudeDir, "plugins", "cache", "test-mkt", "my-plugin", "1.0.0");
 const TSX_BIN = join(process.cwd(), "node_modules", ".bin", "tsx");
@@ -69,6 +70,7 @@ beforeEach(() => {
   mkdirSync(geminiDir, { recursive: true });
   mkdirSync(codexDir, { recursive: true });
   mkdirSync(aiderDir, { recursive: true });
+  mkdirSync(vibeDir, { recursive: true });
   mkdirSync(join(projectDir, ".claude"), { recursive: true });
   mkdirSync(pluginCacheDir, { recursive: true });
 
@@ -257,5 +259,107 @@ describe("E2E: CLI commands", () => {
     expect(conventions).toContain("Project Instructions");
     expect(aiderConf).toContain("read:");
     expect(aiderConf).toContain(".aider/CONVENTIONS.md");
+  });
+
+  it("sync writes to vibe with correct TOML [[mcp_servers]] format", () => {
+    runCli("sync", "--target", "vibe", "--no-backup");
+
+    const tomlContent = readFileSync(join(vibeDir, "config.toml"), "utf-8");
+    const parsed = TOML.parse(tomlContent) as any;
+
+    // mcp_servers is an array (not object like codex)
+    expect(parsed.mcp_servers).toBeInstanceOf(Array);
+    expect(parsed.mcp_servers.length).toBe(3);
+
+    // stdio server with name + transport
+    const stdio = parsed.mcp_servers.find((s: any) => s.name === "e2e-stdio");
+    expect(stdio.transport).toBe("stdio");
+    expect(stdio.command).toBe("npx");
+    expect(stdio.args).toEqual(["-y", "test-mcp"]);
+    expect(stdio.env.KEY).toBe("value");
+
+    // http → streamable-http
+    const http = parsed.mcp_servers.find((s: any) => s.name === "e2e-http");
+    expect(http.transport).toBe("streamable-http");
+    expect(http.url).toBe("https://mcp.example.com");
+
+    // plugin server
+    const plugin = parsed.mcp_servers.find((s: any) => s.name === "e2e-plugin");
+    expect(plugin.transport).toBe("stdio");
+    expect(plugin.command).toBe("node");
+  });
+
+  it("sync --vibe-home writes to custom path", () => {
+    const customDir = join(TEST_DIR, "custom-vibe");
+    mkdirSync(customDir, { recursive: true });
+
+    runCli("sync", "--target", "vibe", "--vibe-home", customDir, "--no-backup");
+
+    const tomlPath = join(customDir, "config.toml");
+    expect(existsSync(tomlPath)).toBe(true);
+
+    const parsed = TOML.parse(readFileSync(tomlPath, "utf-8")) as any;
+    expect(parsed.mcp_servers).toBeInstanceOf(Array);
+    expect(parsed.mcp_servers.find((s: any) => s.name === "e2e-stdio")).toBeDefined();
+  });
+
+  it("sync is idempotent for vibe (re-run skips existing)", () => {
+    runCli("sync", "--target", "vibe", "--no-backup");
+    const output = runCli("sync", "--target", "vibe", "--no-backup");
+
+    expect(output).toContain("already exists");
+    expect(output).not.toContain("Added");
+  });
+
+  it("doctor detects vibe drift", () => {
+    // vibe dir exists but no config → all servers missing = drift
+    const result = runCliWithStatus("doctor", "--target", "vibe");
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Missing in Vibe");
+  });
+
+  it("doctor shows no drift after vibe sync", () => {
+    runCli("sync", "--target", "vibe", "--no-backup");
+    const result = runCliWithStatus("doctor", "--target", "vibe");
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("No drift");
+  });
+
+  it("sync-instructions writes global vibe AGENTS.md", () => {
+    runCli(
+      "sync-instructions",
+      "--target",
+      "vibe",
+      "--global",
+      "--on-conflict",
+      "overwrite",
+      "--no-backup"
+    );
+
+    const agentsMd = readFileSync(join(vibeDir, "AGENTS.md"), "utf-8");
+    expect(agentsMd).toContain("Global Instructions");
+  });
+
+  it("sync --server filters to specific servers only", () => {
+    runCli("sync", "--target", "gemini", "--server", "e2e-stdio", "--no-backup");
+
+    const settings = JSON.parse(readFileSync(join(geminiDir, "settings.json"), "utf-8"));
+
+    // Only e2e-stdio should be synced
+    expect(settings.mcpServers["e2e-stdio"]).toBeDefined();
+    // e2e-http and e2e-plugin should NOT be synced
+    expect(settings.mcpServers["e2e-http"]).toBeUndefined();
+    expect(settings.mcpServers["e2e-plugin"]).toBeUndefined();
+  });
+
+  it("sync --server with multiple names syncs only those", () => {
+    runCli("sync", "--target", "vibe", "--server", "e2e-stdio", "e2e-http", "--no-backup");
+
+    const parsed = TOML.parse(readFileSync(join(vibeDir, "config.toml"), "utf-8")) as any;
+
+    expect(parsed.mcp_servers.length).toBe(2);
+    expect(parsed.mcp_servers.find((s: any) => s.name === "e2e-stdio")).toBeDefined();
+    expect(parsed.mcp_servers.find((s: any) => s.name === "e2e-http")).toBeDefined();
+    expect(parsed.mcp_servers.find((s: any) => s.name === "e2e-plugin")).toBeUndefined();
   });
 });
