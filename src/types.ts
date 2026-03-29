@@ -89,6 +89,46 @@ export interface UnifiedMcpServer {
   oauth?: Record<string, unknown>;
 }
 
+// ===== Qwen Code MCP Config Types =====
+
+export interface QwenMcpServer {
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  url?: string; // SSE
+  httpUrl?: string; // HTTP streamable
+  headers?: Record<string, string>;
+}
+
+export interface QwenSettings {
+  mcpServers?: Record<string, QwenMcpServer>;
+  [key: string]: unknown;
+}
+
+// ===== Amp MCP Config Types =====
+
+export interface AmpMcpServer {
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  url?: string;
+  headers?: Record<string, string>;
+}
+
+export interface AmpSettings {
+  "amp.mcpServers"?: Record<string, AmpMcpServer>;
+  [key: string]: unknown;
+}
+
 // ===== Sync Options =====
 
-export type SyncTarget = "gemini" | "codex" | "opencode" | "kiro" | "cursor" | "kimi" | "vibe";
+export type SyncTarget =
+  | "gemini"
+  | "codex"
+  | "opencode"
+  | "kiro"
+  | "cursor"
+  | "kimi"
+  | "vibe"
+  | "qwen"
+  | "amp";

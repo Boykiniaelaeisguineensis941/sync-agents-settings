@@ -32,6 +32,12 @@ export const PATHS = {
   vibeDir: join(HOME, ".vibe"),
   vibeConfig: join(HOME, ".vibe", "config.toml"),
 
+  // Qwen Code
+  qwenSettings: join(HOME, ".qwen", "settings.json"),
+
+  // Amp (Sourcegraph)
+  ampSettings: join(HOME, ".config", "amp", "settings.json"),
+
   // Instructions (global)
   claudeMdGlobal: join(HOME, ".claude", "CLAUDE.md"),
   geminiMdGlobal: join(HOME, ".gemini", "GEMINI.md"),
@@ -40,6 +46,8 @@ export const PATHS = {
   kiroSteeringGlobal: join(HOME, ".kiro", "steering", "claude-instructions.md"),
   kimiMdGlobal: join(HOME, ".kimi", "AGENTS.md"),
   vibeMdGlobal: join(HOME, ".vibe", "AGENTS.md"),
+  qwenMdGlobal: join(HOME, ".qwen", "AGENTS.md"),
+  ampMdGlobal: join(HOME, ".config", "amp", "AGENTS.md"),
   aiderConventionsGlobal: join(HOME, ".aider", "CONVENTIONS.md"),
   aiderConfigGlobal: join(HOME, ".aider.conf.yml"),
 

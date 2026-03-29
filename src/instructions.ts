@@ -19,6 +19,8 @@ export type InstructionsTarget =
   | "cursor"
   | "kimi"
   | "vibe"
+  | "qwen"
+  | "amp"
   | "aider";
 export type ImportMode = "inline" | "strip";
 
@@ -183,6 +185,18 @@ export function getGlobalSyncPairs(targets: InstructionsTarget[]): SyncPair[] {
         target: PATHS.vibeMdGlobal,
         targetLabel: "Vibe CLI (~/.vibe/AGENTS.md)",
       });
+    } else if (target === "qwen") {
+      pairs.push({
+        source: PATHS.claudeMdGlobal,
+        target: PATHS.qwenMdGlobal,
+        targetLabel: "Qwen Code (~/.qwen/AGENTS.md)",
+      });
+    } else if (target === "amp") {
+      pairs.push({
+        source: PATHS.claudeMdGlobal,
+        target: PATHS.ampMdGlobal,
+        targetLabel: "Amp (~/.config/amp/AGENTS.md)",
+      });
     } else if (target === "aider") {
       pairs.push({
         source: PATHS.claudeMdGlobal,
@@ -264,6 +278,20 @@ export function getLocalSyncPairs(targets: InstructionsTarget[], cwd: string): S
       const targetPath = resolve(cwd, "AGENTS.md");
       if (!seenPaths.has(targetPath)) {
         pairs.push({ source, target: targetPath, targetLabel: "Vibe CLI (./AGENTS.md)" });
+        seenPaths.add(targetPath);
+      }
+    } else if (target === "qwen") {
+      // Qwen Code reads ./AGENTS.md — shared path with Codex/OpenCode/Kimi/Vibe
+      const targetPath = resolve(cwd, "AGENTS.md");
+      if (!seenPaths.has(targetPath)) {
+        pairs.push({ source, target: targetPath, targetLabel: "Qwen Code (./AGENTS.md)" });
+        seenPaths.add(targetPath);
+      }
+    } else if (target === "amp") {
+      // Amp reads ./AGENTS.md — shared path with Codex/OpenCode/Kimi/Vibe/Qwen
+      const targetPath = resolve(cwd, "AGENTS.md");
+      if (!seenPaths.has(targetPath)) {
+        pairs.push({ source, target: targetPath, targetLabel: "Amp (./AGENTS.md)" });
         seenPaths.add(targetPath);
       }
     } else if (target === "aider") {

@@ -15,6 +15,8 @@ import { writeToKiro } from "./writers/kiro.js";
 import { writeToCursor } from "./writers/cursor.js";
 import { writeToKimi, resolveKimiMcpConfigPath } from "./writers/kimi.js";
 import { writeToVibe, resolveVibeConfigPath } from "./writers/vibe.js";
+import { writeToQwen, resolveQwenSettingsPath } from "./writers/qwen.js";
+import { writeToAmp, resolveAmpSettingsPath } from "./writers/amp.js";
 
 export interface ReconcileOptions {
   dryRun?: boolean;
@@ -24,6 +26,8 @@ export interface ReconcileOptions {
   codexHome?: string;
   kimiHome?: string;
   vibeHome?: string;
+  qwenHome?: string;
+  ampHome?: string;
 }
 
 type ReconcileStatus = "validation_failed" | "doctor_failed" | "noop" | "reconciled";
@@ -70,6 +74,8 @@ export function reconcileTargets(
     codexHome: options.codexHome,
     kimiHome: options.kimiHome,
     vibeHome: options.vibeHome,
+    qwenHome: options.qwenHome,
+    ampHome: options.ampHome,
   });
   if (doctor.hasErrors) {
     return {
@@ -111,8 +117,17 @@ export function reconcileTargets(
     const codexConfigPath = resolveCodexConfigPath(options.codexHome);
     const kimiConfigPath = resolveKimiMcpConfigPath(options.kimiHome);
     const vibeConfigPath = resolveVibeConfigPath(options.vibeHome);
+    const qwenConfigPath = resolveQwenSettingsPath(options.qwenHome);
+    const ampConfigPath = resolveAmpSettingsPath(options.ampHome);
     backupDir = createBackup(
-      getFilesToBackup(targetsToSync, codexConfigPath, kimiConfigPath, vibeConfigPath)
+      getFilesToBackup(
+        targetsToSync,
+        codexConfigPath,
+        kimiConfigPath,
+        vibeConfigPath,
+        qwenConfigPath,
+        ampConfigPath
+      )
     );
   }
 
@@ -125,7 +140,9 @@ export function reconcileTargets(
       Boolean(options.dryRun),
       options.codexHome,
       options.kimiHome,
-      options.vibeHome
+      options.vibeHome,
+      options.qwenHome,
+      options.ampHome
     );
     syncResults.push({
       target: result.target,
@@ -150,7 +167,9 @@ function writeTarget(
   dryRun: boolean,
   codexHome?: string,
   kimiHome?: string,
-  vibeHome?: string
+  vibeHome?: string,
+  qwenHome?: string,
+  ampHome?: string
 ): { added: string[]; skipped: string[] } {
   if (target === "gemini") {
     return writeToGemini(servers, dryRun);
@@ -173,6 +192,14 @@ function writeTarget(
     const { added, skipped } = writeToVibe(servers, dryRun, vibeHome);
     return { added, skipped };
   }
+  if (target === "qwen") {
+    const { added, skipped } = writeToQwen(servers, dryRun, qwenHome);
+    return { added, skipped };
+  }
+  if (target === "amp") {
+    const { added, skipped } = writeToAmp(servers, dryRun, ampHome);
+    return { added, skipped };
+  }
   return writeToCursor(servers, dryRun);
 }
 
@@ -188,6 +215,8 @@ export function groupValidationByTarget(
     kimi: [],
     cursor: [],
     vibe: [],
+    qwen: [],
+    amp: [],
   };
   for (const target of targets) {
     grouped[target] ??= [];

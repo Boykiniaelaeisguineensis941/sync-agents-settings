@@ -33,7 +33,9 @@ export function getFilesToBackup(
   targets: string[],
   codexConfigPath?: string,
   kimiConfigPath?: string,
-  vibeConfigPath?: string
+  vibeConfigPath?: string,
+  qwenConfigPath?: string,
+  ampConfigPath?: string
 ): string[] {
   const files = [PATHS.claudeJson, PATHS.claudeSettings];
 
@@ -57,6 +59,12 @@ export function getFilesToBackup(
   }
   if (targets.includes("vibe")) {
     files.push(vibeConfigPath ?? PATHS.vibeConfig);
+  }
+  if (targets.includes("qwen")) {
+    files.push(qwenConfigPath ?? PATHS.qwenSettings);
+  }
+  if (targets.includes("amp")) {
+    files.push(ampConfigPath ?? PATHS.ampSettings);
   }
 
   return files;

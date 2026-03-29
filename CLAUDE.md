@@ -51,11 +51,11 @@ Writers (src/writers/*.ts)
 
 1. **Claude-format targets** (Kiro, Cursor, Kimi): Use shared `claude-format.ts` — same `mcpServers` JSON format as Claude, just different file paths. Each writer is ~10 lines delegating to `writeClaudeFormat()`.
 
-2. **Custom JSON targets** (Gemini, OpenCode): Own writer with format-specific conversion (`httpUrl`, `type: "local"/"remote"`, `environment` vs `env`).
+2. **Custom JSON targets** (Gemini, OpenCode, Qwen Code, Amp): Own writer with format-specific conversion (`httpUrl`, `type: "local"/"remote"`, `environment` vs `env`). Qwen Code follows the Gemini pattern (settings.json with embedded `mcpServers`, `httpUrl` for HTTP, `$VAR` env syntax). Amp uses `"amp.mcpServers"` as the JSON key (dotted key) and `${VAR}` env syntax (same as Claude, no conversion needed).
 
 3. **TOML targets** (Codex, Vibe): Convert JSON to TOML via `@iarna/toml`. Codex uses `[mcp_servers.<name>]` (table-per-key), Vibe uses `[[mcp_servers]]` (array-of-tables with `name` + `transport` fields).
 
-**Adding a new target that uses Claude's format:** Create a one-liner writer like `kiro.ts`/`cursor.ts`/`kimi.ts`, add path to `paths.ts`, add target name to `SyncTarget` union in `types.ts`, wire into `cli.ts` and `backup.ts`.
+**Adding a new target that uses Claude's format:** Create a one-liner writer like `kiro.ts`/`cursor.ts`/`kimi.ts`, add path to `paths.ts`, add target name to `SyncTarget` union in `types.ts`, wire into `cli.ts`, `backup.ts`, `doctor.ts`, `reconcile.ts`, `fix.ts`, and `instructions.ts`.
 
 **Instruction sync (`sync-instructions` command):**
 
@@ -72,7 +72,7 @@ src/prompt.ts
 ```
 
 **Key modules:**
-- `src/env.ts` — `expandEnvVars()` resolves `${VAR:-default}` syntax for targets that don't support it (Codex, OpenCode, Kiro, Cursor, Kimi)
+- `src/env.ts` — `expandEnvVars()` resolves `${VAR:-default}` syntax for targets that don't support it (Codex, OpenCode, Kiro, Cursor, Kimi). Gemini and Qwen Code do their own `${VAR}` → `$VAR` conversion inline.
 - `src/backup.ts` — copies all affected config files to `~/.sync-agents-backup/<timestamp>/` before writing
 - `src/paths.ts` — centralized config file paths for all targets (MCP + instruction paths)
 - `src/doctor.ts` — drift/health checker that compares Claude source MCP names against each target and reports missing/extra/unavailable/parse-error states

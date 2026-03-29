@@ -7,6 +7,8 @@ import { isOAuthOnlyServer } from "./oauth.js";
 import { resolveCodexConfigPath } from "./writers/codex.js";
 import { resolveKimiMcpConfigPath } from "./writers/kimi.js";
 import { resolveVibeConfigPath } from "./writers/vibe.js";
+import { resolveQwenSettingsPath } from "./writers/qwen.js";
+import { resolveAmpSettingsPath } from "./writers/amp.js";
 import type { SyncTarget } from "./types.js";
 
 type TargetStatus = "ok" | "drift" | "unavailable" | "error";
@@ -32,6 +34,8 @@ export interface DoctorOptions {
   codexHome?: string;
   kimiHome?: string;
   vibeHome?: string;
+  qwenHome?: string;
+  ampHome?: string;
 }
 
 interface ReadNamesResult {
@@ -52,7 +56,9 @@ export function runDoctor(targets: SyncTarget[], options: DoctorOptions = {}): D
       target,
       options.codexHome,
       options.kimiHome,
-      options.vibeHome
+      options.vibeHome,
+      options.qwenHome,
+      options.ampHome
     );
 
     if (readResult.status === "error") {
@@ -115,7 +121,9 @@ function readTargetNames(
   target: SyncTarget,
   codexHome?: string,
   kimiHome?: string,
-  vibeHome?: string
+  vibeHome?: string,
+  qwenHome?: string,
+  ampHome?: string
 ): ReadNamesResult {
   if (target === "vibe") {
     return readTomlTargetNames(resolveVibeConfigPath(vibeHome), (parsed) => {
@@ -131,7 +139,7 @@ function readTargetNames(
     });
   }
 
-  const targetConfig = getJsonTargetConfig(target, kimiHome);
+  const targetConfig = getJsonTargetConfig(target, kimiHome, qwenHome, ampHome);
   const targetDir = dirname(targetConfig.path);
   if (!existsSync(targetDir)) {
     return {
@@ -164,10 +172,12 @@ function readTargetNames(
 
 function getJsonTargetConfig(
   target: Exclude<SyncTarget, "codex">,
-  kimiHome?: string
+  kimiHome?: string,
+  qwenHome?: string,
+  ampHome?: string
 ): {
   path: string;
-  key: "mcpServers" | "mcp";
+  key: string;
 } {
   if (target === "gemini") {
     return { path: PATHS.geminiSettings, key: "mcpServers" };
@@ -180,6 +190,12 @@ function getJsonTargetConfig(
   }
   if (target === "kimi") {
     return { path: resolveKimiMcpConfigPath(kimiHome), key: "mcpServers" };
+  }
+  if (target === "qwen") {
+    return { path: resolveQwenSettingsPath(qwenHome), key: "mcpServers" };
+  }
+  if (target === "amp") {
+    return { path: resolveAmpSettingsPath(ampHome), key: "amp.mcpServers" };
   }
   return { path: PATHS.cursorMcpConfig, key: "mcpServers" };
 }

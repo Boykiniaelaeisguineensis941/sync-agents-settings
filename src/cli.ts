@@ -10,6 +10,8 @@ import { writeToKiro } from "./writers/kiro.js";
 import { writeToCursor } from "./writers/cursor.js";
 import { writeToKimi, resolveKimiMcpConfigPath } from "./writers/kimi.js";
 import { writeToVibe, resolveVibeConfigPath } from "./writers/vibe.js";
+import { writeToQwen, resolveQwenSettingsPath } from "./writers/qwen.js";
+import { writeToAmp, resolveAmpSettingsPath } from "./writers/amp.js";
 import { createBackup, getFilesToBackup } from "./backup.js";
 import { PATHS } from "./paths.js";
 import type { SyncTarget, UnifiedMcpServer } from "./types.js";
@@ -44,7 +46,7 @@ const program = new Command();
 program
   .name("sync-agents")
   .description(
-    "Sync Claude Code MCP settings to Gemini CLI / Codex CLI / OpenCode / Kiro CLI / Vibe CLI"
+    "Sync Claude Code MCP settings to Gemini CLI / Codex CLI / OpenCode / Kiro CLI / Vibe CLI / Qwen Code"
   )
   .version("0.4.3");
 
@@ -53,8 +55,8 @@ program
   .description("Sync MCP settings from Claude Code to other CLIs")
   .option(
     "-t, --target <targets...>",
-    "sync targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, aider)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "aider"]
+    "sync targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp, aider)",
+    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp", "aider"]
   )
   .option("--dry-run", "preview mode, no files will be written", false)
   .option("--no-backup", "skip backup")
@@ -72,6 +74,14 @@ program
     "--vibe-home <path>",
     "Vibe config directory (default: ~/.vibe, or specify project-level .vibe/)"
   )
+  .option(
+    "--qwen-home <path>",
+    "Qwen config directory (default: ~/.qwen, or specify project-level .qwen/)"
+  )
+  .option(
+    "--amp-home <path>",
+    "Amp config directory (default: ~/.config/amp, or specify project-level .amp/)"
+  )
   .option("--report <format>", "output format: text or json", "text")
   .option("-v, --verbose", "show detailed output", false)
   .action(async (opts) => {
@@ -84,6 +94,8 @@ program
     const codexHome = opts.codexHome as string | undefined;
     const kimiHome = opts.kimiHome as string | undefined;
     const vibeHome = opts.vibeHome as string | undefined;
+    const qwenHome = opts.qwenHome as string | undefined;
+    const ampHome = opts.ampHome as string | undefined;
     const reportFormat = opts.report as string;
     const jsonReport = reportFormat === "json";
 
@@ -139,12 +151,21 @@ program
     const codexConfigPath = resolveCodexConfigPath(codexHome);
     const kimiConfigPath = resolveKimiMcpConfigPath(kimiHome);
     const vibeConfigPath = resolveVibeConfigPath(vibeHome);
+    const qwenConfigPath = resolveQwenSettingsPath(qwenHome);
+    const ampConfigPath = resolveAmpSettingsPath(ampHome);
     if (!skipBackup && !dryRun) {
       if (!jsonReport) {
         console.log("💾 Backing up config files...");
       }
       const backupDir = createBackup(
-        getFilesToBackup(targets, codexConfigPath, kimiConfigPath, vibeConfigPath)
+        getFilesToBackup(
+          targets,
+          codexConfigPath,
+          kimiConfigPath,
+          vibeConfigPath,
+          qwenConfigPath,
+          ampConfigPath
+        )
       );
       if (!jsonReport) {
         console.log(`  Backup directory: ${backupDir}\n`);
@@ -214,6 +235,30 @@ program
         }
       } else if (target === "vibe") {
         const result = writeToVibe(servers, dryRun, vibeHome);
+        targetReports.push({
+          target,
+          added: result.added,
+          skipped: result.skipped,
+          configPath: result.configPath,
+        });
+        if (!jsonReport) {
+          console.log(`  Target: ${result.configPath}`);
+          printResult(result.added, result.skipped);
+        }
+      } else if (target === "qwen") {
+        const result = writeToQwen(servers, dryRun, qwenHome);
+        targetReports.push({
+          target,
+          added: result.added,
+          skipped: result.skipped,
+          configPath: result.configPath,
+        });
+        if (!jsonReport) {
+          console.log(`  Target: ${result.configPath}`);
+          printResult(result.added, result.skipped);
+        }
+      } else if (target === "amp") {
+        const result = writeToAmp(servers, dryRun, ampHome);
         targetReports.push({
           target,
           added: result.added,
@@ -295,17 +340,27 @@ program
   .description("Compare MCP settings between Claude Code and other CLIs")
   .option(
     "-t, --target <targets...>",
-    "comparison targets (gemini, codex, opencode, kiro, cursor, kimi, vibe)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe"]
+    "comparison targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp)",
+    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp"]
   )
   .option(
     "--kimi-home <path>",
     "Kimi config directory (default: ~/.kimi, or specify project-level .kimi/)"
   )
+  .option(
+    "--qwen-home <path>",
+    "Qwen config directory (default: ~/.qwen, or specify project-level .qwen/)"
+  )
+  .option(
+    "--amp-home <path>",
+    "Amp config directory (default: ~/.config/amp, or specify project-level .amp/)"
+  )
   .option("--report <format>", "output format: text or json", "text")
   .action((opts) => {
     const targets = opts.target as SyncTarget[];
     const kimiHome = opts.kimiHome as string | undefined;
+    const qwenHome = opts.qwenHome as string | undefined;
+    const ampHome = opts.ampHome as string | undefined;
     const reportFormat = opts.report as string;
     const jsonReport = reportFormat === "json";
 
@@ -322,12 +377,14 @@ program
       console.log(`Claude Code: ${servers.length} MCP server(s)\n`);
     }
 
-    const diffConfigs: Record<string, { path: string; key?: "mcpServers" | "mcp" }> = {
+    const diffConfigs: Record<string, { path: string; key?: string }> = {
       gemini: { path: PATHS.geminiSettings },
       opencode: { path: PATHS.openCodeConfig, key: "mcp" },
       kiro: { path: PATHS.kiroMcpConfig },
       cursor: { path: PATHS.cursorMcpConfig },
       kimi: { path: resolveKimiMcpConfigPath(kimiHome) },
+      qwen: { path: resolveQwenSettingsPath(qwenHome) },
+      amp: { path: resolveAmpSettingsPath(ampHome), key: "amp.mcpServers" },
     };
     const targetReports: Array<{
       target: string;
@@ -399,8 +456,8 @@ program
   .description("Detect MCP config drift between Claude Code and target CLIs")
   .option(
     "-t, --target <targets...>",
-    "doctor targets (gemini, codex, opencode, kiro, cursor, kimi, vibe)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe"]
+    "doctor targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp)",
+    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp"]
   )
   .option("--skip-oauth", "ignore OAuth-only Claude servers", false)
   .option("--fix", "auto-run reconcile when drift is detected", false)
@@ -419,6 +476,14 @@ program
     "--vibe-home <path>",
     "Vibe config directory (default: ~/.vibe, or specify project-level .vibe/)"
   )
+  .option(
+    "--qwen-home <path>",
+    "Qwen config directory (default: ~/.qwen, or specify project-level .qwen/)"
+  )
+  .option(
+    "--amp-home <path>",
+    "Amp config directory (default: ~/.config/amp, or specify project-level .amp/)"
+  )
   .action((opts) => {
     const targets = opts.target as SyncTarget[];
     const skipOAuth = opts.skipOauth as boolean;
@@ -429,6 +494,8 @@ program
     const codexHome = opts.codexHome as string | undefined;
     const kimiHome = opts.kimiHome as string | undefined;
     const vibeHome = opts.vibeHome as string | undefined;
+    const qwenHome = opts.qwenHome as string | undefined;
+    const ampHome = opts.ampHome as string | undefined;
     const jsonReport = reportFormat === "json";
 
     if (reportFormat !== "text" && reportFormat !== "json") {
@@ -452,6 +519,8 @@ program
         codexHome,
         kimiHome,
         vibeHome,
+        qwenHome,
+        ampHome,
       });
       if (fixed.status === "failed") {
         if (fixed.reason === "doctor_parse") {
@@ -473,7 +542,14 @@ program
       return;
     }
 
-    const report = runDoctor(targets, { skipOAuth, codexHome, kimiHome, vibeHome });
+    const report = runDoctor(targets, {
+      skipOAuth,
+      codexHome,
+      kimiHome,
+      vibeHome,
+      qwenHome,
+      ampHome,
+    });
 
     if (jsonReport) {
       console.log(formatDoctorReport(report));
@@ -525,8 +601,8 @@ program
   .description("Validate MCP schema and target capability compatibility")
   .option(
     "-t, --target <targets...>",
-    "validation targets (gemini, codex, opencode, kiro, cursor, kimi, vibe)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe"]
+    "validation targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp)",
+    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp"]
   )
   .option("--skip-oauth", "ignore OAuth-only Claude servers", false)
   .option("--fix", "auto-run reconcile after validation passes", false)
@@ -536,6 +612,8 @@ program
   .option("--codex-home <path>", "Codex config directory (used by --fix for reconcile)")
   .option("--kimi-home <path>", "Kimi config directory (used by --fix for reconcile)")
   .option("--vibe-home <path>", "Vibe config directory (used by --fix for reconcile)")
+  .option("--qwen-home <path>", "Qwen config directory (used by --fix for reconcile)")
+  .option("--amp-home <path>", "Amp config directory (used by --fix for reconcile)")
   .action((opts) => {
     const targets = opts.target as SyncTarget[];
     const skipOAuth = opts.skipOauth as boolean;
@@ -546,6 +624,8 @@ program
     const codexHome = opts.codexHome as string | undefined;
     const kimiHome = opts.kimiHome as string | undefined;
     const vibeHome = opts.vibeHome as string | undefined;
+    const qwenHome = opts.qwenHome as string | undefined;
+    const ampHome = opts.ampHome as string | undefined;
     const jsonReport = reportFormat === "json";
 
     if (reportFormat !== "text" && reportFormat !== "json") {
@@ -615,6 +695,8 @@ program
         codexHome,
         kimiHome,
         vibeHome,
+        qwenHome,
+        ampHome,
       });
       if (fixed.status === "failed") {
         if (fixed.reason === "doctor_parse") {
@@ -641,8 +723,8 @@ program
   .description("Validate + detect drift + sync only missing MCP servers")
   .option(
     "-t, --target <targets...>",
-    "reconcile targets (gemini, codex, opencode, kiro, cursor, kimi, vibe)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe"]
+    "reconcile targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp)",
+    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp"]
   )
   .option("--dry-run", "preview mode, no files will be written", false)
   .option("--no-backup", "skip backup")
@@ -660,6 +742,14 @@ program
     "--vibe-home <path>",
     "Vibe config directory (default: ~/.vibe, or specify project-level .vibe/)"
   )
+  .option(
+    "--qwen-home <path>",
+    "Qwen config directory (default: ~/.qwen, or specify project-level .qwen/)"
+  )
+  .option(
+    "--amp-home <path>",
+    "Amp config directory (default: ~/.config/amp, or specify project-level .amp/)"
+  )
   .option("--report <format>", "output format: text or json", "text")
   .action((opts) => {
     const targets = opts.target as SyncTarget[];
@@ -670,6 +760,8 @@ program
     const codexHome = opts.codexHome as string | undefined;
     const kimiHome = opts.kimiHome as string | undefined;
     const vibeHome = opts.vibeHome as string | undefined;
+    const qwenHome = opts.qwenHome as string | undefined;
+    const ampHome = opts.ampHome as string | undefined;
     const reportFormat = opts.report as string;
     const jsonReport = reportFormat === "json";
 
@@ -690,6 +782,8 @@ program
       codexHome,
       kimiHome,
       vibeHome,
+      qwenHome,
+      ampHome,
     });
 
     if (jsonReport) {
@@ -755,8 +849,8 @@ program
   .description("Sync CLAUDE.md instruction files to other AI agent formats")
   .option(
     "-t, --target <targets...>",
-    "sync targets (gemini, codex, opencode, kiro, cursor, kimi, vibe)",
-    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe"]
+    "sync targets (gemini, codex, opencode, kiro, cursor, kimi, vibe, qwen, amp)",
+    ["gemini", "codex", "opencode", "kiro", "cursor", "kimi", "vibe", "qwen", "amp"]
   )
   .option("--global", "sync global config (~/.claude/CLAUDE.md)", false)
   .option(
@@ -919,10 +1013,7 @@ function printInstructionsResult(result: {
   console.log();
 }
 
-function readExistingServerNames(
-  configPath: string,
-  key: "mcpServers" | "mcp" = "mcpServers"
-): Set<string> {
+function readExistingServerNames(configPath: string, key: string = "mcpServers"): Set<string> {
   try {
     if (!existsSync(configPath)) {
       return new Set();
@@ -983,6 +1074,8 @@ function getTargetLabel(target: SyncTarget): string {
   if (target === "opencode") return "OpenCode";
   if (target === "kimi") return "Kimi";
   if (target === "vibe") return "Vibe";
+  if (target === "qwen") return "Qwen";
+  if (target === "amp") return "Amp";
   return target.toUpperCase();
 }
 
