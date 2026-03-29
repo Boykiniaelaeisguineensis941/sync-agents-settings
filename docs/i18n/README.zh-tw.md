@@ -22,17 +22,24 @@
 
 ### 方式 A：Claude Code Plugin（推薦）
 
-在 Claude Code 中直接使用 slash commands：
+透過 marketplace 安裝 Claude Code plugin：
 
 ```bash
-# 載入 plugin（僅本次 session 有效）
-claude --plugin-dir /path/to/sync-agents-settings
+# 1. 新增 marketplace
+claude plugin marketplace add Leoyang183/sync-agents-settings
 
-# 在對話中使用 slash commands：
-#   /sync-list          — 列出所有 MCP servers
+# 2. 安裝 plugin
+claude plugin install sync-agents-settings
+
+# 在任何對話中使用 slash commands：
 #   /sync               — 同步 MCP 設定（含 dry-run 預覽）
-#   /sync-diff           — 比較各 agent 的設定差異
-#   /sync-instructions   — 同步 CLAUDE.md 到其他 agent
+#   /sync-list          — 列出所有 MCP servers
+#   /sync-diff          — 比較各 agent 的設定差異
+#   /sync-doctor        — 偵測 MCP 設定偏移
+#   /sync-validate      — 驗證 schema 與目標相容性
+#   /sync-reconcile     — 驗證 + 偵測偏移 + 只同步缺少的
+#   /sync-instructions  — 同步 CLAUDE.md 到其他 agent
+#   /report-schema      — 產生或寫入 report JSON schema 文件
 ```
 
 Plugin 還包含 **sync-awareness skill**，當你編輯 MCP 設定或 CLAUDE.md 時會自動建議同步。
@@ -208,7 +215,19 @@ sync-agents sync-instructions --dry-run
 
 ## Claude Code Plugin
 
-本專案也可作為 Claude Code plugin 使用，在 Claude Code 對話中直接提供 slash commands 和情境感知 skill。
+本專案同時是 Claude Code **plugin** 和 **marketplace**，在 Claude Code 對話中直接提供 slash commands 和情境感知 skill。
+
+### 安裝
+
+```bash
+# 從 GitHub 安裝（遠端 — clone repo）
+claude plugin marketplace add Leoyang183/sync-agents-settings
+claude plugin install sync-agents-settings
+
+# 或從本地路徑安裝（symlink — 即時反映本地變更）
+claude plugin marketplace add /path/to/sync-agents-settings
+claude plugin install sync-agents-settings
+```
 
 ### Slash Commands
 
@@ -217,7 +236,11 @@ sync-agents sync-instructions --dry-run
 | `/sync` | 同步 MCP server 設定到其他 agent（含 dry-run 預覽和確認） |
 | `/sync-list` | 列出所有 Claude Code 中的 MCP servers |
 | `/sync-diff` | 比較 Claude 和其他 agent 之間的 MCP 設定差異 |
+| `/sync-doctor` | 偵測 Claude 和目標之間的 MCP 設定偏移 |
+| `/sync-validate` | 驗證 MCP schema 與目標能力相容性 |
+| `/sync-reconcile` | 驗證 + 偵測偏移 + 只同步缺少的 server |
 | `/sync-instructions` | 同步 CLAUDE.md 指令檔到其他 agent 格式 |
+| `/report-schema` | 產生或寫入 report JSON schema 文件 |
 
 ### Sync-Awareness Skill
 
@@ -226,11 +249,8 @@ Plugin 包含一個 skill，會自動偵測你正在編輯 MCP 設定（`.claude
 ### Plugin 開發
 
 ```bash
-# 驗證 plugin 結構
-claude plugins validate /path/to/sync-agents-settings
-
-# 本地測試（僅載入此次 session）
-claude --plugin-dir /path/to/sync-agents-settings
+# 驗證 plugin/marketplace 結構
+claude plugin validate /path/to/sync-agents-settings
 ```
 
 ## 限制

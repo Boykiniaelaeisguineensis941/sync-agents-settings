@@ -1,0 +1,31 @@
+{
+  "name": "sync-agents-settings",
+  "owner": {
+    "name": "Leoyang183"
+  },
+  "plugins": [
+    {
+      "name": "sync-agents-settings",
+      "source": "./",
+      "description": "Sync MCP server configs and instructions from Claude Code to other AI agents (Gemini, Codex, Cursor, Kiro, OpenCode, Kimi, Aider)",
+      "version": "0.4.1",
+      "author": {
+        "name": "Leoyang183"
+      },
+      "repository": "https://github.com/Leoyang183/sync-agents-settings",
+      "license": "MIT",
+      "keywords": ["mcp", "sync", "agents", "settings"],
+      "commands": [
+        "./commands/sync.md",
+        "./commands/sync-list.md",
+        "./commands/sync-diff.md",
+        "./commands/sync-instructions.md",
+        "./commands/sync-doctor.md",
+        "./commands/sync-validate.md",
+        "./commands/sync-reconcile.md",
+        "./commands/report-schema.md"
+      ],
+      "skills": ["./skills/"]
+    }
+  ]
+}

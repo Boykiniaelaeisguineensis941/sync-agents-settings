@@ -43,7 +43,7 @@ const program = new Command();
 program
   .name("sync-agents")
   .description("Sync Claude Code MCP settings to Gemini CLI / Codex CLI / OpenCode / Kiro CLI")
-  .version("0.3.0");
+  .version("0.4.1");
 
 program
   .command("sync")

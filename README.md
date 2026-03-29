@@ -26,21 +26,24 @@ This tool lets you configure MCP servers and write instructions once in Claude C
 
 ### Option A: Claude Code Plugin (recommended)
 
-Use directly inside Claude Code with slash commands:
+Install as a Claude Code plugin via marketplace:
 
 ```bash
-# Load the plugin for this session
-claude --plugin-dir /path/to/sync-agents-settings
+# 1. Add the marketplace
+claude plugin marketplace add Leoyang183/sync-agents-settings
 
-# Then use slash commands in the conversation:
-#   /sync-list          — list all MCP servers
+# 2. Install the plugin
+claude plugin install sync-agents-settings
+
+# Then use slash commands in any conversation:
 #   /sync               — sync MCP configs (with dry-run preview)
-#   /sync-diff           — compare configs between agents
-#   /sync-doctor         — detect config drift and parse errors
-#   /sync-validate       — validate schema and target capabilities
-#   /sync-reconcile      — validate + detect drift + sync only missing
-#   /report-schema       — print or write report JSON schema markdown
-#   /sync-instructions   — sync CLAUDE.md to other agents
+#   /sync-list          — list all MCP servers
+#   /sync-diff          — compare configs between agents
+#   /sync-doctor        — detect config drift and parse errors
+#   /sync-validate      — validate schema and target capabilities
+#   /sync-reconcile     — validate + detect drift + sync only missing
+#   /sync-instructions  — sync CLAUDE.md to other agents
+#   /report-schema      — print or write report JSON schema markdown
 ```
 
 The plugin also includes a **sync-awareness skill** that automatically suggests syncing when you edit MCP settings or CLAUDE.md files.
@@ -463,7 +466,19 @@ Use `--no-backup` to skip. Target directories that don't exist (CLI not installe
 
 ## Claude Code Plugin
 
-This project can be used as a Claude Code plugin, providing slash commands and a contextual skill directly inside Claude Code conversations.
+This project is both a Claude Code **plugin** and **marketplace**, providing slash commands and a contextual skill directly inside Claude Code conversations.
+
+### Installation
+
+```bash
+# From GitHub (remote — clones the repo)
+claude plugin marketplace add Leoyang183/sync-agents-settings
+claude plugin install sync-agents-settings
+
+# Or from local path (symlink — reflects local changes instantly)
+claude plugin marketplace add /path/to/sync-agents-settings
+claude plugin install sync-agents-settings
+```
 
 ### Slash Commands
 
@@ -472,7 +487,11 @@ This project can be used as a Claude Code plugin, providing slash commands and a
 | `/sync` | Sync MCP server configs to other agents (with dry-run preview and confirmation) |
 | `/sync-list` | List all MCP servers configured in Claude Code |
 | `/sync-diff` | Compare MCP configs between Claude and other agents |
+| `/sync-doctor` | Detect MCP config drift between Claude and targets |
+| `/sync-validate` | Validate MCP schema and target capability compatibility |
+| `/sync-reconcile` | Validate + detect drift + sync only missing servers |
 | `/sync-instructions` | Sync CLAUDE.md instruction files to other agent formats |
+| `/report-schema` | Print or write report JSON schema markdown |
 
 ### Sync-Awareness Skill
 
@@ -481,11 +500,8 @@ The plugin includes a skill that automatically detects when you're editing MCP s
 ### Plugin Development
 
 ```bash
-# Validate plugin structure
-claude plugins validate /path/to/sync-agents-settings
-
-# Test locally (loads plugin for this session only)
-claude --plugin-dir /path/to/sync-agents-settings
+# Validate plugin/marketplace structure
+claude plugin validate /path/to/sync-agents-settings
 ```
 
 ## Limitations

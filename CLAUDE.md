@@ -98,4 +98,6 @@ Published to npm as `sync-agents-settings`. The `bin` entry uses a CJS wrapper (
 
 ## Plugin
 
-This repo is also a Claude Code plugin. When bumping the version in `package.json`, also update `.claude-plugin/plugin.json` to match.
+This repo is also a Claude Code plugin **and marketplace**. When bumping the version in `package.json`, also update these files to match:
+- `.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
