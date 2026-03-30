@@ -25,34 +25,6 @@ export interface ClaudeSettings {
   [key: string]: unknown;
 }
 
-// ===== Gemini CLI MCP Config Types =====
-
-export interface GeminiMcpServer {
-  command?: string;
-  args?: string[];
-  cwd?: string;
-  env?: Record<string, string>;
-  url?: string; // SSE
-  httpUrl?: string; // HTTP streamable
-  headers?: Record<string, string>;
-  timeout?: number;
-  trust?: boolean;
-  oauth?: {
-    enabled?: boolean;
-    clientId?: string;
-    clientSecret?: string;
-    authorizationUrl?: string;
-    tokenUrl?: string;
-    scopes?: string[];
-    redirectUri?: string;
-  };
-}
-
-export interface GeminiSettings {
-  mcpServers?: Record<string, GeminiMcpServer>;
-  [key: string]: unknown;
-}
-
 // ===== OpenCode MCP Config Types =====
 
 export interface OpenCodeMcpServer {
@@ -87,37 +59,6 @@ export interface UnifiedMcpServer {
   url?: string;
   headers?: Record<string, string>;
   oauth?: Record<string, unknown>;
-}
-
-// ===== Qwen Code MCP Config Types =====
-
-export interface QwenMcpServer {
-  command?: string;
-  args?: string[];
-  env?: Record<string, string>;
-  url?: string; // SSE
-  httpUrl?: string; // HTTP streamable
-  headers?: Record<string, string>;
-}
-
-export interface QwenSettings {
-  mcpServers?: Record<string, QwenMcpServer>;
-  [key: string]: unknown;
-}
-
-// ===== Amp MCP Config Types =====
-
-export interface AmpMcpServer {
-  command?: string;
-  args?: string[];
-  env?: Record<string, string>;
-  url?: string;
-  headers?: Record<string, string>;
-}
-
-export interface AmpSettings {
-  "amp.mcpServers"?: Record<string, AmpMcpServer>;
-  [key: string]: unknown;
 }
 
 // ===== Sync Options =====
